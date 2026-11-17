@@ -1,4 +1,5 @@
 import { Building2, Gauge, Settings, Users } from "lucide-react";
+import { GlobalSearch } from "@/components/global-search";
 import { Logo } from "@/components/logo";
 import { Avatar } from "@/components/ui";
 import { roleLabels } from "@/lib/permissions";
@@ -52,7 +53,10 @@ export async function MobileBar() {
         <Logo />
         <SignOutButton />
       </div>
-      <nav aria-label="ניווט ראשי" className="flex gap-1 overflow-x-auto px-3 pb-2">
+      <div className="px-4 pb-2">
+        <GlobalSearch />
+      </div>
+      <nav aria-label="ניווט ראשי" className="no-scrollbar flex gap-1 overflow-x-auto px-3 pb-2">
         {items.map((i) => (
           <NavLink key={i.href} href={i.href} icon={i.icon} compact>
             {i.label}

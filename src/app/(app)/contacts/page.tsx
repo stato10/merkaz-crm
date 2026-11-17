@@ -82,10 +82,10 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-line bg-surface-2/60 text-start text-xs text-muted">
+              <thead className="border-b border-line bg-surface-2/60 text-xs text-muted">
                 <tr>
                   <th className="px-4 py-2.5 text-start font-medium">שם</th>
-                  <th className="px-4 py-2.5 text-start font-medium">חברה</th>
+                  <th className="hidden px-4 py-2.5 text-start font-medium sm:table-cell">חברה</th>
                   <th className="hidden px-4 py-2.5 text-start font-medium md:table-cell">פרטי קשר</th>
                   <th className="px-4 py-2.5 text-start font-medium">סטטוס</th>
                   <th className="hidden px-4 py-2.5 text-start font-medium lg:table-cell">אחראי</th>
@@ -100,11 +100,16 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
                         <Avatar name={fullName(c)} size={28} />
                         <span>
                           {fullName(c)}
-                          {c.title && <span className="block text-xs font-normal text-muted">{c.title}</span>}
+                          {(c.title || c.companyName) && (
+                            <span className="block text-xs font-normal text-muted">
+                              <span className="hidden sm:inline">{c.title}</span>
+                              <span className="sm:hidden">{c.companyName ?? c.title}</span>
+                            </span>
+                          )}
                         </span>
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-muted">
+                    <td className="hidden px-4 py-3 text-muted sm:table-cell">
                       {c.companyId ? (
                         <Link href={`/companies/${c.companyId}`} className="hover:text-ink">
                           {c.companyName}

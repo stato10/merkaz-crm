@@ -74,6 +74,30 @@ html {
 body {
   background: var(--bg);
   color: var(--ink);
+  font-feature-settings: "tnum" 1;
+  caret-color: var(--accent);
+  accent-color: var(--accent);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--accent) 22%, transparent);
+  color: var(--ink);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--muted) 35%, transparent) transparent;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+a {
+  text-underline-offset: 3px;
 }
 
 :focus-visible {

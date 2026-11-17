@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Avatar, Badge, Card } from "@/components/ui";
+import { Mail, Phone } from "lucide-react";
+import { Avatar, BackLink, Badge, buttonClass, Card } from "@/components/ui";
 import { Timeline } from "@/components/timeline";
 import { contactStatusLabel, contactStatusTone, fullName } from "@/lib/labels";
 import { companyOptions, getContact, listActivities, listMembers } from "@/lib/queries";
@@ -27,9 +27,7 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
 
   return (
     <>
-      <Link href="/contacts" className="text-sm text-muted hover:text-ink">
-        → אנשי קשר
-      </Link>
+      <BackLink href="/contacts">אנשי קשר</BackLink>
       <div className="mt-3 mb-6 flex flex-wrap items-center gap-4">
         <Avatar name={fullName(c)} size={52} />
         <div className="min-w-0 flex-1">
@@ -39,6 +37,16 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
           </p>
         </div>
         <Badge tone={contactStatusTone[c.status]}>{contactStatusLabel[c.status]}</Badge>
+        {c.email && (
+          <a href={`mailto:${c.email}`} className={buttonClass("secondary")}>
+            <Mail size={15} aria-hidden /> אימייל
+          </a>
+        )}
+        {c.phone && (
+          <a href={`tel:${c.phone.replace(/[^\d+]/g, "")}`} className={buttonClass("secondary")}>
+            <Phone size={15} aria-hidden /> חיוג
+          </a>
+        )}
         {ctx.can({ contact: ["delete"] }) && <DeleteButton action={deleteContact.bind(null, id)} />}
       </div>
 

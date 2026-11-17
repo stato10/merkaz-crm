@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Avatar, Badge, Card } from "@/components/ui";
+import { Avatar, BackLink, Badge, Card } from "@/components/ui";
 import { Timeline } from "@/components/timeline";
 import { contactStatusLabel, contactStatusTone, fullName } from "@/lib/labels";
 import { getCompany, listActivities, listContacts } from "@/lib/queries";
@@ -23,7 +23,7 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
 
   return (
     <>
-      <Link href="/companies" className="text-sm text-muted hover:text-ink">→ חברות</Link>
+      <BackLink href="/companies">חברות</BackLink>
       <h1 className="mt-3 mb-6 text-2xl font-semibold tracking-tight">{company.name}</h1>
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="grid gap-6">

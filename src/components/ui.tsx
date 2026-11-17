@@ -1,4 +1,6 @@
 import clsx from "clsx";
+import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
 export const cx = clsx;
@@ -67,7 +69,7 @@ export function Field({
 export function Card({ className, ...props }: ComponentProps<"div">) {
   return (
     <div
-      className={cx("rounded-xl border border-line bg-surface shadow-card", className)}
+      className={cx("rounded-xl border border-line bg-surface", className)}
       {...props}
     />
   );
@@ -113,6 +115,19 @@ export function PageHeader({
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
+  );
+}
+
+/** Breadcrumb back-link above a detail page title. */
+export function BackLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1 text-sm text-muted transition-colors hover:text-ink"
+    >
+      <ChevronRight size={15} aria-hidden />
+      {children}
+    </Link>
   );
 }
 

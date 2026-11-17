@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { GlobalSearch } from "@/components/global-search";
 import { Logo } from "@/components/logo";
 import { Skeleton } from "@/components/ui";
 import { MobileBar, SidebarAccount, SidebarNav } from "./sidebar";
@@ -25,6 +26,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={<MobileBarSkeleton />}>
           <MobileBar />
         </Suspense>
+        <div className="sticky top-0 z-10 hidden h-14 items-center border-b border-line bg-bg/85 px-8 backdrop-blur md:flex">
+          <GlobalSearch className="w-full max-w-sm" />
+        </div>
         <main className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-8">
           <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
         </main>
