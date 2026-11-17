@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מוקד | סביבת פיילוט</title>
+<link rel="preload" href="/Rubik.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="/style.css">
+<script defer src="/app.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#main">דילוג לתוכן</a>
+<header class="top">
+  <div class="brand-lockup"><span class="brand" aria-hidden="true"><i></i><i></i><i></i></span><strong>סביבת המוקד</strong><span id="org-name">מוקד הדגמה</span></div>
+  <nav class="shell-nav" aria-label="מסכי המוקד">
+    <button id="inbox-view" class="quiet" type="button" aria-pressed="true">תיבת פניות</button>
+    <button id="conversation-view" class="quiet" type="button" aria-pressed="false">שיחת לקוח</button>
+  </nav>
+  <div class="toolbar"><span id="actor-label" hidden></span><button id="connect-open" class="quiet">החלפת ארגון</button></div>
+</header>
+<main id="main" tabindex="-1">
+  <div class="intro">
+    <h1 id="workspace-title">תיבת פניות</h1>
+    <div class="toolbar">
+      <button id="audit-open" class="quiet" hidden>יומן פעולות</button>
+      <button id="settings-open" class="quiet" hidden>הגדרות ארגון</button>
+    </div>
+  </div>
+  <p id="notice" role="status"></p>
+  <div class="workspace">
+    <section class="queue" aria-labelledby="queue-heading">
+      <h2 id="queue-heading" tabindex="-1">תור נציגים <span id="case-count"></span></h2>
+      <div class="queue-filters" role="group" aria-label="סינון פניות">
+        <button class="quiet" type="button" data-case-filter="waiting" aria-pressed="true">ממתינות</button>
+        <button class="quiet" type="button" data-case-filter="closed" aria-pressed="false">סגורות</button>
+      </div>
+      <label for="case-search">חיפוש בתור</label>
+      <input type="search" id="case-search" name="case-search" autocomplete="off" placeholder="שם לקוח או מספר פנייה…">
+      <div id="cases"></div>
+    </section>
+    <section id="conversation-panel" class="console" hidden>
+      <header class="conversation-header">
+        <h2>שיחת לקוח</h2>
+        <div class="appointment-control"><label for="appointment">תור לבדיקה</label><select id="appointment"></select></div>
+      </header>
+      <div id="messages" class="messages" role="log" aria-label="תמליל שיחה" tabindex="0"></div>
+      <div class="shortcuts" role="group" aria-label="בקשות לדוגמה">
+        <button type="button" class="quiet" data-request="מתי התור שלי?">בדיקת תור</button>
+        <button type="button" class="quiet" data-request="אני רוצה לשנות את התור">שינוי מועד</button>
+        <button type="button" class="quiet" data-request="אני רוצה נציג">בקשת נציג</button>
+      </div>
+      <form id="chat" class="row"><input id="utterance" name="message" autocomplete="off" maxlength="300" aria-label="הודעה" placeholder="כתבו בקשה או בחרו פעולה…" required><button>שליחה</button></form>
+      <div class="row voice"><button id="mic" type="button" class="quiet">דיבור במיקרופון</button><label><input id="speak" type="checkbox"> הקראת תשובות</label></div>
+      <form id="reschedule" hidden>
+        <label for="slot">המועד החדש</label>
+        <div class="row"><input id="slot" type="datetime-local" required><button>אישור שינוי</button></div>
+      </form>
+    </section>
+    <section id="case-panel" class="console case-panel" aria-labelledby="case-heading">
+      <header class="case-header">
+        <div><h2 id="case-heading" tabindex="-1">טיפול בפנייה</h2><p class="case-meta meta" id="case-meta" hidden><bdi id="case-id"></bdi><time id="case-created"></time></p></div>
+        <div class="case-controls"><span id="case-status" class="case-status" hidden></span><button id="case-close" type="button" hidden>סיום טיפול</button></div>
+      </header>
+      <p id="case-empty" class="empty">בחרו פנייה מהתור כדי להציג את פרטי הטיפול.</p>
+      <div id="case-content" hidden>
+        <h3>סיכום ההעברה</h3>
+        <div id="case-summary"></div>
+      </div>
+    </section>
+    <div class="boards">
+      <section class="customer-panel" aria-labelledby="customer-heading">
+        <h2 id="customer-heading">פרטי לקוח</h2>
+        <div id="customer-context" class="customer-context" hidden>
+          <div class="customer-heading"><span id="customer-initials" aria-hidden="true"></span><strong id="customer-name"></strong></div>
+          <dl><dt>מספר תור</dt><dd><bdi id="customer-id"></bdi></dd><dt>מועד נוכחי</dt><dd id="customer-slot"></dd></dl>
+        </div>
+        <p id="customer-empty" class="empty">בחרו פנייה או תור כדי להציג את פרטי הלקוח.</p>
+      </section>
+      <section><h2>פעולות אחרונות</h2><div id="activity"></div></section>
+    </div>
+  </div>
+</main>
+<dialog id="audit-dialog" aria-labelledby="audit-heading">
+  <div class="row"><h2 id="audit-heading">יומן פעולות</h2><form method="dialog"><button class="quiet">סגירה</button></form></div>
+  <p id="audit-status" role="status"></p>
+  <div class="audit-scroll" tabindex="0" role="region" aria-label="רישומי יומן">
+    <table id="audit-table" hidden>
+      <thead><tr><th scope="col">פעולה</th><th scope="col">בוצעה על ידי</th><th scope="col">מזהה</th><th scope="col">מועד</th></tr></thead>
+      <tbody id="audit-events"></tbody>
+    </table>
+  </div>
+</dialog>
+<dialog id="connect-dialog">
+  <form id="connect"><h2>חיבור לארגון</h2><label>מזהה ארגון<input name="org" placeholder="demo" required></label>
+  <label>מפתח גישה<input name="token" type="password" autocomplete="off"></label>
+  <p id="connect-error" role="status"></p><div class="row"><button>חיבור</button><button type="button" class="quiet cancel">ביטול</button></div></form>
+</dialog>
+<dialog id="settings-dialog">
+  <form id="settings"><h2>הגדרות ארגון</h2><label>שם המוקד<input name="name" maxlength="80" required></label>
+  <label>ברכת פתיחה<input name="welcome" maxlength="250" required></label>
+  <p id="settings-error" role="status"></p><div class="row"><button>שמירה</button><button type="button" class="quiet cancel">ביטול</button></div></form>
+</dialog>
+</body></html>
