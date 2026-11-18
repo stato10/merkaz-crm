@@ -101,34 +101,41 @@ export function Composer({ action }: { action: Action }) {
       ref={ref}
       action={formAction}
       className={cx(
-        "rounded-xl border p-3",
-        kind === "note" ? "border-warn/40 bg-warn-soft/40" : "border-line bg-surface",
+        "rounded-xl border p-3 transition-colors focus-within:ring-2",
+        kind === "note"
+          ? "border-warn/50 bg-warn-soft/40 focus-within:border-warn focus-within:ring-warn/25"
+          : "border-line bg-surface focus-within:border-accent focus-within:ring-accent/20",
       )}
     >
-      <input type="hidden" name="kind" value={kind} />
-      <div role="radiogroup" aria-label="סוג הודעה" className="mb-2 flex gap-1">
+      <fieldset className="mb-2 flex gap-1">
+        <legend className="sr-only">סוג הודעה</legend>
         {kinds.map((k) => (
-          <button
+          <label
             key={k.v}
-            type="button"
-            role="radio"
-            aria-checked={kind === k.v}
-            onClick={() => setKind(k.v)}
             className={cx(
-              "h-7 rounded-md px-2.5 text-sm",
+              "flex h-8 cursor-pointer items-center rounded-md px-2.5 text-sm",
+              "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-accent",
               kind === k.v ? "bg-surface-2 font-medium text-ink" : "text-muted hover:text-ink",
             )}
           >
+            <input
+              type="radio"
+              name="kind"
+              value={k.v}
+              checked={kind === k.v}
+              onChange={() => setKind(k.v)}
+              className="sr-only"
+            />
             {k.label}
-          </button>
+          </label>
         ))}
-      </div>
+      </fieldset>
       <Textarea
         name="body"
         required
         rows={3}
         aria-label="תוכן ההודעה"
-        className="border-0 bg-transparent px-1 shadow-none focus:ring-0"
+        className="resize-none border-0 bg-transparent px-1 shadow-none focus:border-0 focus:ring-0"
         placeholder={
           kind === "note"
             ? "רק הצוות רואה הערות פנימיות"
@@ -161,14 +168,18 @@ export function TicketProps({
   members: Opt[];
   disabled?: boolean;
 }) {
-  const [state, formAction, pending] = useActionState(action, undefined);
-  const ref = useRef<HTMLFormElement>(null);
-  const submit = () => ref.current?.requestSubmit();
+  const [dirty, setDirty] = useState(false);
+  const touch = () => setDirty(true);
+  const [state, formAction, pending] = useActionState<FormState, FormData>(async (s, f) => {
+    const r = await action(s, f);
+    if (r?.ok) setDirty(false);
+    return r;
+  }, undefined);
   return (
-    <form ref={ref} action={formAction} className="grid gap-3">
+    <form action={formAction} className="grid gap-3">
       <fieldset disabled={disabled || pending} className="grid gap-3">
         <Field label="סטטוס">
-          <Select name="status" defaultValue={defaults.status} onChange={submit}>
+          <Select name="status" defaultValue={defaults.status} onChange={touch}>
             {ticketStatuses.map((s) => (
               <option key={s} value={s}>
                 {ticketStatusLabel[s]}
@@ -177,7 +188,7 @@ export function TicketProps({
           </Select>
         </Field>
         <Field label="דחיפות">
-          <Select name="priority" defaultValue={defaults.priority} onChange={submit}>
+          <Select name="priority" defaultValue={defaults.priority} onChange={touch}>
             {ticketPriorities.map((p) => (
               <option key={p} value={p}>
                 {ticketPriorityLabel[p]}
@@ -186,7 +197,7 @@ export function TicketProps({
           </Select>
         </Field>
         <Field label="נציג">
-          <Select name="assigneeId" defaultValue={defaults.assigneeId ?? ""} onChange={submit}>
+          <Select name="assigneeId" defaultValue={defaults.assigneeId ?? ""} onChange={touch}>
             <option value="">לא שובצה</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
@@ -196,9 +207,20 @@ export function TicketProps({
           </Select>
         </Field>
       </fieldset>
-      <p aria-live="polite" className="h-4 text-xs">
-        {pending ? <span className="text-muted">שומר…</span> : state?.error ? <span className="text-danger">{state.error}</span> : state?.ok ? <span className="text-ok">נשמר</span> : null}
-      </p>
+      {!disabled && (
+        <div className="flex min-h-9 items-center gap-3">
+          {dirty && (
+            <Button disabled={pending}>{pending ? "שומר…" : "שמירת שינויים"}</Button>
+          )}
+          <p aria-live="polite" className="text-xs">
+            {state?.error ? (
+              <span className="text-danger">{state.error}</span>
+            ) : state?.ok && !dirty ? (
+              <span className="text-ok">נשמר</span>
+            ) : null}
+          </p>
+        </div>
+      )}
     </form>
   );
 }

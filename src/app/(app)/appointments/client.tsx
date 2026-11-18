@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { Button, cx, Field, Input, Select, Textarea } from "@/components/ui";
 import {
   type AppointmentStatus,
@@ -135,32 +135,59 @@ export function AppointmentForm({
   );
 }
 
+/**
+ * Saves the status after the choice settles, so stepping through options
+ * with the keyboard commits only the final one. Reverts and explains on failure.
+ */
 export function StatusSelect({
   status,
   action,
   disabled,
-  className,
 }: {
   status: AppointmentStatus;
   action: (s: string) => Promise<FormState>;
   disabled?: boolean;
-  className?: string;
 }) {
+  const [value, setValue] = useState<string>(status);
+  const [saved, setSaved] = useState<string>(status);
+  const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const commit = (v: string) => {
+    if (v === saved) return;
+    start(async () => {
+      const r = await action(v);
+      if (r?.error) {
+        setValue(saved);
+        setError(r.error);
+      } else {
+        setSaved(v);
+      }
+    });
+  };
+
   return (
-    <div className={cx("w-28 shrink-0", className)}>
+    <div className="w-28 shrink-0">
       <Select
         aria-label="סטטוס התור"
-        defaultValue={status}
-        disabled={disabled || pending}
+        aria-describedby={error ? `${status}-err` : undefined}
+        value={value}
+        disabled={disabled}
+        aria-busy={pending}
         onChange={(e) => {
           const v = e.target.value;
-          start(async () => {
-            const r = await action(v);
-            if (r?.error) alert(r.error);
-          });
+          setValue(v);
+          setError(null);
+          clearTimeout(timer.current);
+          timer.current = setTimeout(() => commit(v), 700);
         }}
-        className="h-8 py-0 text-xs"
+        onBlur={() => {
+          clearTimeout(timer.current);
+          commit(value);
+        }}
+        className={cx("h-8 py-0 text-xs", pending && "opacity-60")}
       >
         {appointmentStatuses.map((s) => (
           <option key={s} value={s}>
@@ -168,6 +195,11 @@ export function StatusSelect({
           </option>
         ))}
       </Select>
+      {error && (
+        <p id={`${status}-err`} role="alert" className="mt-1 text-xs text-danger">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
