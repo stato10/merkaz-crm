@@ -9,7 +9,7 @@ export const contactStatusLabel: Record<ContactStatus, string> = {
 };
 
 export const contactStatusTone = {
-  lead: "info",
+  lead: "accent",
   prospect: "warn",
   customer: "ok",
   churned: "neutral",

@@ -8,15 +8,15 @@ export const cx = clsx;
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const buttonStyles: Record<Variant, string> = {
-  primary: "bg-accent text-accent-ink hover:brightness-110",
-  secondary: "bg-surface text-ink border border-line hover:bg-surface-2",
+  primary: "bg-accent text-accent-ink shadow-brand hover:brightness-110 active:brightness-95",
+  secondary: "bg-surface text-accent border border-accent/40 hover:bg-accent-soft",
   ghost: "text-muted hover:text-ink hover:bg-surface-2",
-  danger: "bg-surface text-danger border border-line hover:bg-danger-soft",
+  danger: "bg-surface text-danger border border-danger/40 hover:bg-danger-soft",
 };
 
 export function buttonClass(variant: Variant = "primary", className?: string) {
   return cx(
-    "inline-flex h-9 items-center justify-center gap-2 rounded-lg px-3.5 text-sm font-medium",
+    "inline-flex h-10 items-center justify-center gap-2 rounded px-4 text-sm font-medium",
     "transition-[background-color,filter,color] duration-150 disabled:opacity-50 disabled:pointer-events-none",
     "whitespace-nowrap",
     buttonStyles[variant],
@@ -33,8 +33,8 @@ export function Button({
 }
 
 export const inputClass =
-  "h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted/70 " +
-  "focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20";
+  "h-10 w-full rounded border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted/70 " +
+  "transition-colors hover:border-icon focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20";
 
 export function Input({ className, ...props }: ComponentProps<"input">) {
   return <input className={cx(inputClass, className)} {...props} />;
@@ -69,7 +69,7 @@ export function Field({
 export function Card({ className, ...props }: ComponentProps<"div">) {
   return (
     <div
-      className={cx("rounded-xl border border-line bg-surface", className)}
+      className={cx("rounded-md bg-surface shadow-card", className)}
       {...props}
     />
   );
@@ -89,7 +89,7 @@ export function Badge({ tone = "neutral", children }: { tone?: Tone; children: R
   return (
     <span
       className={cx(
-        "inline-flex h-6 items-center rounded-md px-2 text-xs font-medium",
+        "inline-flex h-6 items-center rounded px-2 text-xs font-medium",
         toneStyles[tone],
       )}
     >
@@ -110,7 +110,7 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-[22px] font-medium text-ink">{title}</h1>
         {description && <p className="mt-1 text-sm text-muted">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -131,6 +131,9 @@ export function BackLink({ href, children }: { href: string; children: ReactNode
   );
 }
 
+/** Kit accent colors, deepened so white initials stay readable. */
+const avatarColors = ["#0A73B5", "#6B3FD6", "#C0302A", "#16794A", "#8A5300", "#334D6E"];
+
 export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
   const initials = name
     .split(/\s+/)
@@ -140,7 +143,8 @@ export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
     .join("");
   // Stable hue per name so the same person always gets the same color.
   let h = 0;
-  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) % 997;
+  const hue = avatarColors[h % avatarColors.length];
   return (
     <span
       aria-hidden
@@ -148,7 +152,7 @@ export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
       style={{
         width: size,
         height: size,
-        background: `oklch(0.58 0.09 ${h})`,
+        background: hue,
         fontSize: size * 0.38,
       }}
     >

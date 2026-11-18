@@ -25,16 +25,39 @@ export function NavLink({
       href={href}
       aria-current={active ? "page" : undefined}
       className={cx(
-        "flex items-center gap-2.5 rounded-lg text-sm transition-colors",
-        compact ? "h-8 shrink-0 px-2.5" : "h-9 px-3",
+        "group flex items-center text-sm transition-colors",
+        compact ? "h-8 shrink-0 gap-2 rounded px-2.5" : "h-10 gap-4 border-s-[3px] px-6 font-medium",
         active
-          ? "bg-accent-soft font-medium text-accent"
-          : "text-muted hover:bg-surface-2 hover:text-ink",
+          ? compact
+            ? "bg-accent-soft text-accent"
+            : "border-brand text-accent"
+          : "border-transparent text-ink-2 hover:text-accent",
       )}
     >
-      {icon}
+      <span className={cx("transition-colors", active ? "text-brand" : "text-icon group-hover:text-brand")}>
+        {icon}
+      </span>
       {children}
     </Link>
+  );
+}
+
+/** Sign-out row at the sidebar's foot, where the kit keeps "Toggle sidebar". */
+export function SignOutRow() {
+  const router = useRouter();
+  return (
+    <button
+      type="button"
+      className="flex h-12 w-full items-center gap-3 px-6 text-xs text-muted transition-colors hover:text-ink"
+      onClick={async () => {
+        await authClient.signOut();
+        router.replace("/login");
+        router.refresh();
+      }}
+    >
+      <LogOut size={16} className="-scale-x-100 text-icon" aria-hidden />
+      התנתקות
+    </button>
   );
 }
 

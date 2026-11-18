@@ -26,10 +26,10 @@ import { getCtx } from "@/lib/session";
 
 /** Fill color for each status segment; matches the Badge tones. */
 const segmentColor = {
-  lead: "bg-info",
-  prospect: "bg-warn",
-  customer: "bg-ok",
-  churned: "bg-muted/40",
+  lead: "bg-brand",
+  prospect: "bg-dot-warn",
+  customer: "bg-dot-ok",
+  churned: "bg-icon",
 } as const;
 
 export default async function Overview() {
@@ -79,7 +79,7 @@ export default async function Overview() {
                 <h2 className="font-semibold">
                   תורים היום <span className="font-normal text-muted">{todayAppts.length}</span>
                 </h2>
-                <Link href="/appointments" className="text-sm text-muted hover:text-ink">
+                <Link href="/appointments" className="text-sm text-accent hover:underline">
                   ליומן
                 </Link>
               </div>
@@ -118,7 +118,7 @@ export default async function Overview() {
                 <h2 className="font-semibold">
                   פניות פתוחות <span className="font-normal text-muted">{openCount}</span>
                 </h2>
-                <Link href="/tickets" className="text-sm text-muted hover:text-ink">
+                <Link href="/tickets" className="text-sm text-accent hover:underline">
                   לכל הפניות
                 </Link>
               </div>
@@ -209,7 +209,7 @@ export default async function Overview() {
         <Card className="overflow-hidden">
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <h2 className="font-semibold">נוספו לאחרונה</h2>
-            <Link href="/contacts" className="text-sm text-muted hover:text-ink">
+            <Link href="/contacts" className="text-sm text-accent hover:underline">
               לכל אנשי הקשר
             </Link>
           </div>

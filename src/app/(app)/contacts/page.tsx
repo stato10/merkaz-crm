@@ -59,7 +59,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
               aria-current={status === s ? "page" : undefined}
               className={cx(
                 "h-8 rounded-lg px-3 text-sm leading-8",
-                status === s ? "bg-ink text-bg" : "text-muted hover:bg-surface-2 hover:text-ink",
+                status === s ? "bg-accent-soft font-medium text-accent" : "text-muted hover:bg-surface-2 hover:text-ink",
               )}
             >
               {s ? contactStatusLabel[s] : "הכל"}{" "}
@@ -82,21 +82,21 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-line bg-surface-2/60 text-xs text-muted">
+              <thead className="border-b border-line text-[13px] text-muted">
                 <tr>
-                  <th className="px-4 py-2.5 text-start font-medium">שם</th>
-                  <th className="hidden px-4 py-2.5 text-start font-medium sm:table-cell">חברה</th>
-                  <th className="hidden px-4 py-2.5 text-start font-medium md:table-cell">פרטי קשר</th>
-                  <th className="px-4 py-2.5 text-start font-medium">סטטוס</th>
-                  <th className="hidden px-4 py-2.5 text-start font-medium lg:table-cell">אחראי</th>
-                  <th className="hidden px-4 py-2.5 text-start font-medium lg:table-cell">נוסף</th>
+                  <th className="px-5 py-4 text-start font-normal">שם</th>
+                  <th className="hidden px-5 py-4 text-start font-normal sm:table-cell">חברה</th>
+                  <th className="hidden px-5 py-4 text-start font-normal md:table-cell">פרטי קשר</th>
+                  <th className="px-5 py-4 text-start font-normal">סטטוס</th>
+                  <th className="hidden px-5 py-4 text-start font-normal lg:table-cell">אחראי</th>
+                  <th className="hidden px-5 py-4 text-start font-normal lg:table-cell">נוסף</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
                 {rows.map((c) => (
-                  <tr key={c.id} className="hover:bg-surface-2/50">
-                    <td className="px-4 py-3">
-                      <Link href={`/contacts/${c.id}`} className="flex items-center gap-2.5 font-medium hover:text-accent">
+                  <tr key={c.id} className="transition-colors hover:bg-surface-2">
+                    <td className="h-16 px-5 py-3">
+                      <Link href={`/contacts/${c.id}`} className="flex items-center gap-3 text-[15px] font-medium hover:text-accent">
                         <Avatar name={fullName(c)} size={28} />
                         <span>
                           {fullName(c)}
@@ -109,7 +109,7 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
                         </span>
                       </Link>
                     </td>
-                    <td className="hidden px-4 py-3 text-muted sm:table-cell">
+                    <td className="hidden h-16 px-5 py-3 text-muted sm:table-cell">
                       {c.companyId ? (
                         <Link href={`/companies/${c.companyId}`} className="hover:text-ink">
                           {c.companyName}
@@ -118,15 +118,15 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
                         "—"
                       )}
                     </td>
-                    <td className="hidden px-4 py-3 text-muted md:table-cell">
+                    <td className="hidden h-16 px-5 py-3 text-muted md:table-cell">
                       <span className="ltr block">{c.email ?? ""}</span>
                       <span className="ltr block text-xs">{c.phone ?? ""}</span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="h-16 px-5 py-3">
                       <Badge tone={contactStatusTone[c.status]}>{contactStatusLabel[c.status]}</Badge>
                     </td>
-                    <td className="hidden px-4 py-3 text-muted lg:table-cell">{c.ownerName ?? "—"}</td>
-                    <td className="hidden px-4 py-3 text-muted lg:table-cell">{timeAgo(c.createdAt)}</td>
+                    <td className="hidden h-16 px-5 py-3 whitespace-nowrap text-muted lg:table-cell">{c.ownerName ?? "—"}</td>
+                    <td className="hidden h-16 px-5 py-3 whitespace-nowrap text-muted lg:table-cell">{timeAgo(c.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>

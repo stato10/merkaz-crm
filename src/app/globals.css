@@ -2,46 +2,59 @@
 
 /* Design tokens. Every color in the app goes through these. */
 :root {
-  --bg: #f6f6f3;
+  /* SaaS CRM kit palette (Figma), tuned for WCAG AA text contrast. */
+  --bg: #f5f6f8;
   --surface: #ffffff;
-  --surface-2: #f1f1ec;
-  --ink: #17191c;
-  --muted: #646a73;
-  --line: #e4e4de;
-  --accent: #0e6f66;
+  --surface-2: #f5f6f8;
+  --ink: #192a3e;
+  --ink-2: #334d6e;
+  --muted: #6a707e;
+  --icon: #c2cfe0;
+  --line: #ebeff2;
+  --brand: #109cf1;
+  --accent: #0a73b5;
   --accent-ink: #ffffff;
-  --accent-soft: #e3f1ee;
-  --danger: #b42318;
-  --danger-soft: #fdecea;
-  --warn: #9a5b00;
-  --warn-soft: #fdf3e1;
-  --info: #2f5bd3;
-  --info-soft: #e9effd;
-  --ok: #18794e;
-  --ok-soft: #e5f4ec;
-  --shadow: 0 1px 2px rgb(20 20 20 / 0.04), 0 4px 16px rgb(20 20 20 / 0.04);
+  --accent-soft: #e8f5fe;
+  --danger: #c0302a;
+  --danger-soft: #feedeb;
+  --warn: #8a5300;
+  --warn-soft: #fff4e0;
+  --info: #6b3fd6;
+  --info-soft: #f1ebfe;
+  --ok: #16794a;
+  --ok-soft: #e5f8ee;
+  --dot-ok: #2ed47a;
+  --dot-warn: #ffb946;
+  --dot-danger: #f7685b;
+  --dot-info: #885af8;
+  --shadow: 0 6px 18px rgb(0 0 0 / 0.06);
+  --shadow-brand: 0 4px 10px rgb(16 156 241 / 0.24);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111315;
-    --surface: #181a1d;
-    --surface-2: #202327;
-    --ink: #ecedee;
-    --muted: #9ba1a9;
-    --line: #2a2e33;
-    --accent: #3fb8a9;
-    --accent-ink: #06201d;
-    --accent-soft: #15302c;
-    --danger: #f97066;
-    --danger-soft: #3a1714;
-    --warn: #f5b546;
-    --warn-soft: #33260f;
-    --info: #84a7ff;
-    --info-soft: #18233d;
-    --ok: #4cc38a;
-    --ok-soft: #12291e;
-    --shadow: none;
+    --bg: #0f151d;
+    --surface: #1a2433;
+    --surface-2: #212d3e;
+    --ink: #e7ebf0;
+    --ink-2: #c3cedb;
+    --muted: #93a0b4;
+    --icon: #5b6b80;
+    --line: #26344a;
+    --brand: #2ea8f3;
+    --accent: #5db8f5;
+    --accent-ink: #06243a;
+    --accent-soft: #15324a;
+    --danger: #ff8a7f;
+    --danger-soft: #3a1c1b;
+    --warn: #ffc566;
+    --warn-soft: #33270f;
+    --info: #b59bff;
+    --info-soft: #2a2145;
+    --ok: #5fe0a0;
+    --ok-soft: #12301f;
+    --shadow: 0 0 0 1px var(--line);
+    --shadow-brand: none;
   }
 }
 
@@ -50,6 +63,13 @@
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-icon: var(--icon);
+  --color-brand: var(--brand);
+  --color-dot-ok: var(--dot-ok);
+  --color-dot-warn: var(--dot-warn);
+  --color-dot-danger: var(--dot-danger);
+  --color-dot-info: var(--dot-info);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-accent: var(--accent);
@@ -63,8 +83,9 @@
   --color-info-soft: var(--info-soft);
   --color-ok: var(--ok);
   --color-ok-soft: var(--ok-soft);
-  --font-sans: var(--font-rubik), system-ui, sans-serif;
+  --font-sans: var(--font-poppins), var(--font-rubik), system-ui, sans-serif;
   --shadow-card: var(--shadow);
+  --shadow-brand: var(--shadow-brand);
 }
 
 html {
@@ -101,7 +122,7 @@ a {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
 

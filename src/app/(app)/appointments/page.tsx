@@ -63,7 +63,7 @@ export default async function AppointmentsPage({ searchParams }: PageProps<"/app
             aria-current={past === o.v ? "page" : undefined}
             className={cx(
               "h-8 rounded-lg px-3 text-sm leading-8",
-              past === o.v ? "bg-ink text-bg" : "text-muted hover:bg-surface-2 hover:text-ink",
+              past === o.v ? "bg-accent-soft font-medium text-accent" : "text-muted hover:bg-surface-2 hover:text-ink",
             )}
           >
             {o.label}

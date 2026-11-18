@@ -64,7 +64,7 @@ export default async function TicketsPage({ searchParams }: PageProps<"/tickets"
               aria-current={status === s ? "page" : undefined}
               className={cx(
                 "h-8 rounded-lg px-3 text-sm leading-8",
-                status === s ? "bg-ink text-bg" : "text-muted hover:bg-surface-2 hover:text-ink",
+                status === s ? "bg-accent-soft font-medium text-accent" : "text-muted hover:bg-surface-2 hover:text-ink",
               )}
             >
               {ticketStatusLabel[s]} <span className="opacity-60">{counts[s] ?? 0}</span>

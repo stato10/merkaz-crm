@@ -21,9 +21,9 @@ import { Composer, TicketProps } from "../client";
 export const metadata: Metadata = { title: "פנייה" };
 
 const kindStyle = {
-  inbound: "me-auto bg-surface-2",
-  outbound: "ms-auto bg-accent-soft",
-  note: "mx-auto w-full border border-dashed border-warn/50 bg-warn-soft/40",
+  inbound: "me-auto bg-accent text-accent-ink [&_.meta]:text-accent-ink/80",
+  outbound: "ms-auto border border-line bg-surface",
+  note: "mx-auto w-full border border-dashed border-warn/50 bg-warn-soft/60",
 } as const;
 
 export default async function TicketPage({ params }: PageProps<"/tickets/[id]">) {
@@ -64,9 +64,9 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[id]">)
         <section aria-label="שיחה" className="grid content-start gap-4">
           <ol className="grid gap-3">
             {messages.map((m) => (
-              <li key={m.id} className={cx("max-w-[85%] rounded-xl px-4 py-3", kindStyle[m.kind])}>
-                <div className="mb-1 flex items-baseline gap-2 text-xs text-muted">
-                  <span className="font-medium text-ink/80">
+              <li key={m.id} className={cx("max-w-[85%]", m.kind === "note" && "w-full max-w-full")}>
+                <div className={cx("mb-2 flex items-baseline gap-2 text-xs text-muted", m.kind === "outbound" && "justify-end")}>
+                  <span className="font-medium text-ink">
                     {m.kind === "inbound"
                       ? (contactName ?? "הלקוח")
                       : m.kind === "note"
@@ -75,7 +75,9 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[id]">)
                   </span>
                   <time dateTime={m.createdAt.toISOString()}>{formatDateTime(m.createdAt)}</time>
                 </div>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{m.body}</p>
+                <p className={cx("rounded-md px-5 py-4 text-sm leading-relaxed whitespace-pre-wrap", kindStyle[m.kind])}>
+                  {m.body}
+                </p>
               </li>
             ))}
           </ol>
