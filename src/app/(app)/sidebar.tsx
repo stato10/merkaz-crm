@@ -1,4 +1,4 @@
-import { Building2, Gauge, Settings, Users } from "lucide-react";
+import { Building2, CalendarClock, Gauge, Inbox, Settings, Users } from "lucide-react";
 import { GlobalSearch } from "@/components/global-search";
 import { Logo } from "@/components/logo";
 import { Avatar } from "@/components/ui";
@@ -10,6 +10,8 @@ async function navItems() {
   const ctx = await getCtx();
   return [
     { href: "/", label: "סקירה", icon: <Gauge size={17} />, show: true },
+    { href: "/tickets", label: "פניות", icon: <Inbox size={17} />, show: ctx.can({ ticket: ["read"] }) },
+    { href: "/appointments", label: "תורים", icon: <CalendarClock size={17} />, show: ctx.can({ appointment: ["read"] }) },
     { href: "/contacts", label: "אנשי קשר", icon: <Users size={17} />, show: ctx.can({ contact: ["read"] }) },
     { href: "/companies", label: "חברות", icon: <Building2 size={17} />, show: ctx.can({ company: ["read"] }) },
     { href: "/settings/team", label: "צוות והרשאות", icon: <Settings size={17} />, show: ctx.can({ member: ["create"] }) },

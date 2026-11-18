@@ -2,11 +2,13 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -189,6 +191,86 @@ export const activities = pgTable(
   ],
 );
 
+/* ------------------------------------------------------------------ */
+/* Service: tickets and appointments                                   */
+/* ------------------------------------------------------------------ */
+
+export const ticketStatus = pgEnum("ticket_status", ["open", "pending", "resolved"]);
+export const ticketPriority = pgEnum("ticket_priority", ["low", "normal", "high", "urgent"]);
+export const messageKind = pgEnum("message_kind", ["inbound", "outbound", "note"]);
+export const appointmentStatus = pgEnum("appointment_status", [
+  "scheduled",
+  "confirmed",
+  "completed",
+  "cancelled",
+  "no_show",
+]);
+
+/** A customer request handled by the service team. `number` is per organization. */
+export const tickets = pgTable(
+  "tickets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: orgId(),
+    number: integer("number").notNull(),
+    subject: text("subject").notNull(),
+    status: ticketStatus("status").notNull().default("open"),
+    priority: ticketPriority("priority").notNull().default("normal"),
+    channel: text("channel").notNull().default("manual"), // manual | phone | email | whatsapp | web | ai
+    contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "set null" }),
+    assigneeId: text("assignee_id").references(() => user.id, { onDelete: "set null" }),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("tickets_org_number_idx").on(t.orgId, t.number),
+    index("tickets_queue_idx").on(t.orgId, t.status, t.lastMessageAt),
+    index("tickets_contact_idx").on(t.contactId),
+  ],
+);
+
+/** Conversation on a ticket: customer messages, replies and internal notes. */
+export const ticketMessages = pgTable(
+  "ticket_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: orgId(),
+    ticketId: uuid("ticket_id")
+      .notNull()
+      .references(() => tickets.id, { onDelete: "cascade" }),
+    kind: messageKind("kind").notNull(),
+    authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("ticket_messages_ticket_idx").on(t.ticketId, t.createdAt)],
+);
+
+export const appointments = pgTable(
+  "appointments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: orgId(),
+    contactId: uuid("contact_id")
+      .notNull()
+      .references(() => contacts.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    status: appointmentStatus("status").notNull().default("scheduled"),
+    assigneeId: text("assignee_id").references(() => user.id, { onDelete: "set null" }),
+    location: text("location"),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    index("appointments_org_start_idx").on(t.orgId, t.startsAt),
+    index("appointments_contact_idx").on(t.contactId, t.startsAt),
+  ],
+);
+
 /** Append-only security/audit log (who did what). */
 export const auditLog = pgTable(
   "audit_log",
@@ -221,3 +303,5 @@ export const contactsRelations = relations(contacts, ({ one }) => ({
 export type Contact = typeof contacts.$inferSelect;
 export type Company = typeof companies.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
+export type Ticket = typeof tickets.$inferSelect;
+export type Appointment = typeof appointments.$inferSelect;

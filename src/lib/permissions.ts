@@ -16,6 +16,7 @@ export const statement = {
   company: ["create", "read", "update", "delete"],
   deal: ["create", "read", "update", "delete"],
   ticket: ["create", "read", "update", "delete"],
+  appointment: ["create", "read", "update", "delete"],
   report: ["read"],
   settings: ["read", "update"],
   audit: ["read"],
@@ -31,6 +32,7 @@ export const owner = ac.newRole({
   company: [...crud],
   deal: [...crud],
   ticket: [...crud],
+  appointment: [...crud],
   report: ["read"],
   settings: ["read", "update"],
   audit: ["read"],
@@ -42,6 +44,7 @@ export const admin = ac.newRole({
   company: [...crud],
   deal: [...crud],
   ticket: [...crud],
+  appointment: [...crud],
   report: ["read"],
   settings: ["read", "update"],
   audit: ["read"],
@@ -54,6 +57,7 @@ export const sales = ac.newRole({
   company: ["create", "read", "update"],
   deal: ["create", "read", "update"],
   ticket: ["read"],
+  appointment: ["create", "read", "update"],
   report: ["read"],
 });
 
@@ -64,6 +68,7 @@ export const agent = ac.newRole({
   company: ["read"],
   deal: ["read"],
   ticket: ["create", "read", "update"],
+  appointment: ["create", "read", "update"],
 });
 
 export const roles = { owner, admin, sales, agent };

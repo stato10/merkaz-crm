@@ -1,4 +1,4 @@
-import { Mail, MessageSquare, Pencil, Phone, Plus, Users } from "lucide-react";
+import { CalendarClock, Inbox, Mail, MessageSquare, Pencil, Phone, Plus, Users } from "lucide-react";
 import Link from "next/link";
 import { activityLabel, formatDateTime, timeAgo } from "@/lib/labels";
 
@@ -9,6 +9,8 @@ const icons: Record<string, React.ReactNode> = {
   meeting: <Users size={14} />,
   created: <Plus size={14} />,
   updated: <Pencil size={14} />,
+  ticket: <Inbox size={14} />,
+  appointment: <CalendarClock size={14} />,
 };
 
 type Item = {
