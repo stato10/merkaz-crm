@@ -4,6 +4,8 @@
 
 A production-grade, Hebrew-first (RTL) CRM: contacts and companies, a sales pipeline with a weighted forecast, a service inbox with tickets and appointments, team roles, a public REST API with webhooks, and CSV import/export. Built as a multi-tenant SaaS where **Postgres itself enforces tenant isolation**.
 
+**Live demo: [merkaz-crm-omega.vercel.app](https://merkaz-crm-omega.vercel.app)** — click "כניסה לחשבון ההדגמה" to explore a seeded organization (Vercel + Neon Postgres).
+
 > מערכת CRM בעברית למכירות ושירות: אנשי קשר, צנרת עסקאות, פניות ותורים, הרשאות לפי תפקיד, API ו-Webhooks.
 
 ![Sales pipeline](docs/screenshots/pipeline.png)
