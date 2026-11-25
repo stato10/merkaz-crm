@@ -168,7 +168,7 @@ export function Board({
         </p>
       )}
       <div className="-mx-4 overflow-x-auto px-4 pb-4 md:-mx-9 md:px-9">
-        <ol className="flex min-w-max gap-4" aria-label="שלבי המכירה">
+        <ol className="flex gap-4" aria-label="שלבי המכירה">
           {stages.map((s) => {
             const items = optimistic.filter((d) => d.stageId === s.id);
             const sum = items.reduce((a, d) => a + d.amount, 0);
@@ -177,7 +177,7 @@ export function Board({
                 key={s.id}
                 aria-labelledby={`st-${s.id}`}
                 className={cx(
-                  "flex w-72 shrink-0 flex-col rounded-md transition-colors",
+                  "flex w-64 min-w-64 flex-1 shrink-0 flex-col rounded-md transition-colors",
                   over === s.id && dragging ? "bg-accent-soft ring-2 ring-brand/40" : "bg-surface-2/0",
                 )}
                 onDragOver={(e) => {

@@ -175,7 +175,7 @@ export async function moveDeal(id: string, stageId: string): Promise<FormState> 
 
 const closeInput = z.object({
   outcome: z.enum(["won", "lost"]),
-  reason: z.preprocess(emptyToNull, z.string().trim().max(300).nullable()),
+  reason: z.preprocess((v) => (v === undefined ? null : emptyToNull(v)), z.string().trim().max(300).nullable()),
 });
 
 export async function closeDeal(id: string, _: FormState, form: FormData): Promise<FormState> {

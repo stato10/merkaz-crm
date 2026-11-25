@@ -1,6 +1,6 @@
 import "server-only";
-import { after } from "next/server";
 import { db, schema } from "@/db";
+import { defer } from "./defer";
 import { log } from "./log";
 import { attemptAll, enqueueEvent } from "./webhooks";
 
@@ -20,13 +20,7 @@ export async function writeAudit(e: AuditEntry) {
   await db.insert(schema.auditLog).values(e);
   try {
     const ids = await enqueueEvent(e.orgId, e.action, e.target, e.metadata);
-    if (ids.length) {
-      try {
-        after(() => attemptAll(ids));
-      } catch {
-        await attemptAll(ids); // outside a request scope (scripts, tests)
-      }
-    }
+    if (ids.length) await defer(() => attemptAll(ids));
   } catch (err) {
     // Never fail the user's action because of a webhook; the row is retried by cron.
     log.error("webhook.enqueue_failed", { action: e.action, orgId: e.orgId, err });

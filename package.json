@@ -6,7 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "db:push": "drizzle-kit push --force && tsx scripts/db-setup.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:e2e": "playwright test",
+    "check": "npm run lint && npm run typecheck && npm run test"
   },
   "dependencies": {
     "better-auth": "^1.7.25",
@@ -20,8 +28,9 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/turbopack": "4.3.3",
-    "@types/node": "^20",
+    "@types/node": "^24.19.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^18.0.10",
@@ -31,6 +40,7 @@
     "server-only": "^0.0.1",
     "tailwindcss": "4.3.3",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.1.1"
   }
 }

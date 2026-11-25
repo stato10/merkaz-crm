@@ -1,11 +1,12 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
-import { after, type NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db, schema } from "@/db";
 import { type Tx, withTenant } from "@/db/tenant";
 import { type AuditEntry, writeAudit } from "../audit";
+import { defer } from "../defer";
 import { type Logger, log } from "../log";
 import { type Permissions, roleCan, type RoleName } from "../permissions";
 import { rateLimit } from "../rate-limit";
@@ -100,7 +101,7 @@ export function apiRoute<P = Record<string, never>>(permission: Permissions | nu
       }
 
       if (!key.lastUsedAt || Date.now() - key.lastUsedAt.getTime() > 60_000) {
-        after(() =>
+        await defer(() =>
           db.update(schema.apiKeys).set({ lastUsedAt: new Date() }).where(eq(schema.apiKeys.id, key.id)),
         );
       }

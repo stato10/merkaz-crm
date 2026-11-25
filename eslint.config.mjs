@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Not part of the app: reference checkouts, the old pilot, test output.
+    ".reference/**",
+    "pilot/**",
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 

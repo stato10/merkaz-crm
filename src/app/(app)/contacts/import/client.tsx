@@ -2,7 +2,7 @@
 
 import { FileUp } from "lucide-react";
 import Link from "next/link";
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Badge, Button, buttonClass, Card, cx, Select } from "@/components/ui";
 import { type ContactField, detectColumns, parseCsv } from "@/lib/csv";
 import { importContacts } from "./actions";
@@ -45,6 +45,12 @@ export function ImportFlow() {
       fileRef.current.files = dt.files;
     }
   }
+
+  // A file picked before hydration finished never fired our onChange; pick it up now.
+  useEffect(() => {
+    const early = fileRef.current?.files?.[0];
+    if (early) void load(early);
+  }, []);
 
   const hasName = mapping.includes("firstName") || mapping.includes("fullName");
 

@@ -48,3 +48,34 @@ export function LoginForm() {
     </form>
   );
 }
+
+/** Public demo: one click into the seeded demo organization (NEXT_PUBLIC_DEMO_MODE=1). */
+export function DemoLogin() {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  return (
+    <div className="grid gap-2 rounded-md border border-accent/30 bg-accent-soft p-4">
+      <p className="text-sm font-medium text-ink">רוצים להציץ? יש חשבון הדגמה עם נתונים מלאים.</p>
+      <Button
+        type="button"
+        variant="secondary"
+        disabled={pending}
+        onClick={async () => {
+          setPending(true);
+          const { error } = await authClient.signIn.email({
+            email: process.env.NEXT_PUBLIC_DEMO_EMAIL ?? "demo@merkaz.dev",
+            password: process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? "merkaz-demo-2026",
+          });
+          setPending(false);
+          if (error) return setError("חשבון ההדגמה לא זמין כרגע");
+          router.replace("/");
+          router.refresh();
+        }}
+      >
+        {pending ? "נכנס…" : "כניסה לחשבון ההדגמה"}
+      </Button>
+      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+    </div>
+  );
+}

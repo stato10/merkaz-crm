@@ -1,3 +1,5 @@
+# Development: `docker compose up -d db` (Postgres on 5433, used by `npm run dev`).
+# Full stack:  `docker compose --profile app up --build` → http://localhost:3000
 services:
   db:
     image: postgres:17-alpine
@@ -14,6 +16,31 @@ services:
       test: ["CMD-SHELL", "pg_isready -U crm"]
       interval: 3s
       retries: 20
+
+  migrate:
+    profiles: [app]
+    build: { context: ., target: migrate }
+    environment:
+      DATABASE_URL: postgres://crm:crm@db:5432/crm
+      SEED_DEMO: "1"
+    depends_on:
+      db: { condition: service_healthy }
+
+  app:
+    profiles: [app]
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_DEMO_MODE: "1"
+    environment:
+      DATABASE_URL: postgres://crm:crm@db:5432/crm
+      BETTER_AUTH_URL: http://localhost:3000
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-change-me-in-production-please-000000}
+      CRON_SECRET: ${CRON_SECRET:-local-cron-secret}
+    ports:
+      - "3000:3000"
+    depends_on:
+      migrate: { condition: service_completed_successfully }
 
 volumes:
   crm-db:
