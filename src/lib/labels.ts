@@ -85,6 +85,7 @@ export const channelLabel: Record<string, string> = {
   whatsapp: "וואטסאפ",
   web: "אתר",
   ai: "סוכן AI",
+  api: "API",
 };
 
 export const appointmentStatuses = [

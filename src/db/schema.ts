@@ -339,6 +339,83 @@ export const auditLog = pgTable(
 );
 
 /* ------------------------------------------------------------------ */
+/* Platform: API keys, webhooks, rate limits                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Organization API key. Only a SHA-256 hash of the secret is stored; the
+ * plaintext is shown once on creation. `role` caps what the key may do.
+ */
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: orgId(),
+    name: text("name").notNull(),
+    prefix: text("prefix").notNull(), // first characters, for display: crm_live_ab12…
+    hash: text("hash").notNull(),
+    role: text("role").notNull().default("admin"),
+    createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("api_keys_hash_idx").on(t.hash), index("api_keys_org_idx").on(t.orgId)],
+);
+
+export const webhookEndpoints = pgTable(
+  "webhook_endpoints",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: orgId(),
+    url: text("url").notNull(),
+    secret: text("secret").notNull(), // HMAC signing secret, shown to the owner
+    events: text("events").array().notNull().default(sql`'{}'::text[]`), // empty = all events
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("webhook_endpoints_org_idx").on(t.orgId)],
+);
+
+export const deliveryStatus = pgEnum("delivery_status", ["pending", "succeeded", "failed"]);
+
+/** Outbox: one row per (event, endpoint). Retried with exponential backoff. */
+export const webhookDeliveries = pgTable(
+  "webhook_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: orgId(),
+    endpointId: uuid("endpoint_id")
+      .notNull()
+      .references(() => webhookEndpoints.id, { onDelete: "cascade" }),
+    event: text("event").notNull(),
+    payload: jsonb("payload").notNull(),
+    status: deliveryStatus("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
+    lastStatusCode: integer("last_status_code"),
+    lastError: text("last_error"),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("webhook_deliveries_due_idx").on(t.status, t.nextAttemptAt),
+    index("webhook_deliveries_endpoint_idx").on(t.endpointId, t.createdAt),
+  ],
+);
+
+/** Fixed-window counters shared by every app instance. */
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(), // bucket:window
+  count: integer("count").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type WebhookEndpoint = typeof webhookEndpoints.$inferSelect;
+export type WebhookDelivery = typeof webhookDeliveries.$inferSelect;
+
+/* ------------------------------------------------------------------ */
 /* Relations                                                           */
 /* ------------------------------------------------------------------ */
 

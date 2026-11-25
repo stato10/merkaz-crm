@@ -1,3 +1,4 @@
+import { Download, Upload } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Avatar, Badge, buttonClass, Card, cx, EmptyState, Input, PageHeader } from "@/components/ui";
@@ -42,11 +43,21 @@ export default async function ContactsPage({ searchParams }: PageProps<"/contact
         title="אנשי קשר"
         description={`${total} אנשי קשר בארגון`}
         actions={
-          ctx.can({ contact: ["create"] }) && (
-            <Link href="/contacts/new" className={buttonClass()}>
-              איש קשר חדש
-            </Link>
-          )
+          <>
+            <a href={`/contacts/export${status ? `?status=${status}` : ""}`} className={buttonClass("ghost")} download>
+              <Download size={16} aria-hidden /> ייצוא
+            </a>
+            {ctx.can({ contact: ["create"] }) && (
+              <>
+                <Link href="/contacts/import" className={buttonClass("secondary")}>
+                  <Upload size={16} aria-hidden /> ייבוא
+                </Link>
+                <Link href="/contacts/new" className={buttonClass()}>
+                  איש קשר חדש
+                </Link>
+              </>
+            )}
+          </>
         }
       />
 

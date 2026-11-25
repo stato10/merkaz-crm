@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db, schema } from "@/db";
+import { writeAudit } from "./audit";
 import { auth } from "./auth";
 import { type Permissions, roleCan, type RoleName } from "./permissions";
 
@@ -63,11 +64,5 @@ export async function audit(
   target: string,
   metadata?: Record<string, unknown>,
 ) {
-  await db.insert(schema.auditLog).values({
-    orgId: ctx.orgId,
-    actorId: ctx.userId,
-    action,
-    target,
-    metadata,
-  });
+  await writeAudit({ orgId: ctx.orgId, actorId: ctx.userId, action, target, metadata });
 }
