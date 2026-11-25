@@ -1,5 +1,7 @@
 # Merkaz — multi-tenant CRM for sales and service
 
+[![CI](https://github.com/stato10/merkaz-crm/actions/workflows/ci.yml/badge.svg)](https://github.com/stato10/merkaz-crm/actions/workflows/ci.yml)
+
 A production-grade, Hebrew-first (RTL) CRM: contacts and companies, a sales pipeline with a weighted forecast, a service inbox with tickets and appointments, team roles, a public REST API with webhooks, and CSV import/export. Built as a multi-tenant SaaS where **Postgres itself enforces tenant isolation**.
 
 > מערכת CRM בעברית למכירות ושירות: אנשי קשר, צנרת עסקאות, פניות ותורים, הרשאות לפי תפקיד, API ו-Webhooks.
