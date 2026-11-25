@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { Button, cx, Field, Input, Select, Textarea } from "@/components/ui";
 import {
   ticketPriorities,
@@ -89,13 +91,40 @@ const kinds = [
   { v: "inbound", label: "הלקוח כתב" },
 ] as const;
 
-export function Composer({ action }: { action: Action }) {
-  const [state, formAction, pending] = useActionState(action, undefined);
+type DraftFn = () => Promise<{ draft?: string; handedOff?: string; error?: string }>;
+
+export function Composer({ action, draft }: { action: Action; draft?: DraftFn }) {
+  const [ai, setAi] = useState<{ tone: "ok" | "warn" | "error"; text: string } | null>(null);
+  const [state, formAction, pending] = useActionState<FormState, FormData>(async (s, f) => {
+    const r = await action(s, f);
+    if (r?.ok) setAi(null);
+    return r;
+  }, undefined);
   const [kind, setKind] = useState<(typeof kinds)[number]["v"]>("outbound");
   const ref = useRef<HTMLFormElement>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const router = useRouter();
+  const [drafting, startDraft] = useTransition();
   useEffect(() => {
     if (state?.ok) ref.current?.reset();
   }, [state]);
+
+  const suggest = () =>
+    startDraft(async () => {
+      setAi(null);
+      const r = await draft!();
+      if (r.draft && bodyRef.current) {
+        setKind("outbound");
+        bodyRef.current.value = r.draft;
+        bodyRef.current.focus();
+        setAi({ tone: "ok", text: "טיוטה מוכנה. עברו עליה, ערכו ושמרו." });
+      } else if (r.handedOff) {
+        setAi({ tone: "warn", text: `הסוכן העביר את הפנייה לנציג: ${r.handedOff}` });
+        router.refresh();
+      } else {
+        setAi({ tone: "error", text: r.error ?? "משהו השתבש" });
+      }
+    });
   return (
     <form
       ref={ref}
@@ -131,9 +160,10 @@ export function Composer({ action }: { action: Action }) {
         ))}
       </fieldset>
       <Textarea
+        ref={bodyRef}
         name="body"
         required
-        rows={3}
+        rows={kind === "outbound" && ai?.tone === "ok" ? 7 : 3}
         aria-label="תוכן ההודעה"
         className="resize-none border-0 bg-transparent px-1 shadow-none focus:border-0 focus:ring-0"
         placeholder={
@@ -145,8 +175,22 @@ export function Composer({ action }: { action: Action }) {
         }
       />
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        <Button disabled={pending}>{pending ? "שומר…" : kind === "outbound" ? "שמירת תגובה" : "הוספה"}</Button>
-        {kind === "outbound" && !state?.error && (
+        <Button disabled={pending || drafting}>{pending ? "שומר…" : kind === "outbound" ? "שמירת תגובה" : "הוספה"}</Button>
+        {draft && kind === "outbound" && (
+          <Button type="button" variant="secondary" onClick={suggest} disabled={drafting || pending} aria-busy={drafting}>
+            <Sparkles size={16} strokeWidth={1.8} aria-hidden className={cx(drafting && "animate-pulse")} />
+            {drafting ? "הסוכן קורא את הפנייה…" : "טיוטה עם AI"}
+          </Button>
+        )}
+        {ai && (
+          <p
+            role="status"
+            className={cx("text-sm", ai.tone === "error" ? "text-danger" : ai.tone === "warn" ? "text-warn" : "text-muted")}
+          >
+            {ai.text}
+          </p>
+        )}
+        {kind === "outbound" && !state?.error && !ai && (
           <p className="text-xs text-muted">
             ערוץ שליחה עדיין לא מחובר. התגובה נשמרת בפנייה, ושולחים אותה ללקוח בנפרד.
           </p>

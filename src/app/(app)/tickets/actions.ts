@@ -5,7 +5,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db, schema } from "@/db";
+import { runAgent } from "@/lib/ai/agent";
+import { aiGate } from "@/lib/ai/guard";
 import { ticketPriorities, ticketStatuses } from "@/lib/labels";
+import { log } from "@/lib/log";
 import { audit, type Ctx, ForbiddenError, requirePermission } from "@/lib/session";
 import type { FormState } from "../contacts/actions";
 
@@ -131,6 +134,39 @@ export async function addMessage(ticketId: string, _: FormState, form: FormData)
   revalidatePath(`/tickets/${ticketId}`);
   revalidatePath("/tickets");
   return { ok: true };
+}
+
+export type DraftResult = { draft?: string; handedOff?: string; error?: string };
+
+/** Ask the agent for a reply draft. It reads the ticket and the customer, and may hand off instead. */
+export async function draftReply(ticketId: string): Promise<DraftResult> {
+  try {
+    const ctx = await requirePermission({ ticket: ["update"] });
+    const t = await db.query.tickets.findFirst({
+      where: and(eq(tickets.id, ticketId), eq(tickets.orgId, ctx.orgId)),
+      columns: { number: true },
+    });
+    if (!t) return { error: "הפנייה לא נמצאה" };
+    const gate = await aiGate(ctx.orgId, ctx.userId);
+    if (!gate.ok) return { error: gate.error };
+
+    const r = await runAgent({
+      principal: { orgId: ctx.orgId, actorId: ctx.userId, role: ctx.role, via: "agent" },
+      mode: "draft_reply",
+      messages: [{ role: "user", content: `Draft a reply to ticket #${t.number}.` }],
+    });
+    if (r.toolCalls.some((c) => c.name === "handoff_to_human" && c.ok)) {
+      revalidatePath(`/tickets/${ticketId}`);
+      revalidatePath("/tickets");
+      return { handedOff: r.text.replace(/^הועבר לנציג:\s*/, "") };
+    }
+    if (!r.text.trim()) return { error: "הסוכן לא הצליח לנסח תשובה. נסו שוב." };
+    return { draft: r.text.trim() };
+  } catch (e) {
+    if (e instanceof ForbiddenError) return { error: e.message };
+    log.error("ai.draft_failed", { ticketId, err: e });
+    return { error: "שירות ה-AI לא זמין כרגע. נסו שוב בעוד רגע." };
+  }
 }
 
 const propsInput = z.object({

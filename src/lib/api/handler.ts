@@ -49,7 +49,8 @@ function problem(status: number, code: string, message: string, requestId: strin
   );
 }
 
-async function authenticate(req: NextRequest) {
+/** Resolve the API key on a request (Bearer or x-api-key), or null. Also used by the MCP endpoint. */
+export async function authenticate(req: Request) {
   const header = req.headers.get("authorization") ?? "";
   const token = header.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : req.headers.get("x-api-key");
   if (!token || !looksLikeApiKey(token)) return null;

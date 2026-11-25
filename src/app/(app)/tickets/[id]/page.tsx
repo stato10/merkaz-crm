@@ -15,7 +15,8 @@ import {
 } from "@/lib/labels";
 import { getTicket, listMembers, listTicketMessages } from "@/lib/queries";
 import { requirePermission } from "@/lib/session";
-import { addMessage, updateTicket } from "../actions";
+import { aiConfigured } from "@/lib/ai/agent";
+import { addMessage, draftReply, updateTicket } from "../actions";
 import { Composer, TicketProps } from "../client";
 
 export const metadata: Metadata = { title: "פנייה" };
@@ -81,7 +82,12 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[id]">)
               </li>
             ))}
           </ol>
-          {canEdit && <Composer action={addMessage.bind(null, id)} />}
+          {canEdit && (
+            <Composer
+              action={addMessage.bind(null, id)}
+              draft={aiConfigured() ? draftReply.bind(null, id) : undefined}
+            />
+          )}
         </section>
 
         <aside className="grid content-start gap-4">

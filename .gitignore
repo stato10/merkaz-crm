@@ -49,3 +49,6 @@ __pycache__/
 tests/e2e/.auth/
 test-results/
 playwright-report/
+
+# agent eval output
+evals/results/

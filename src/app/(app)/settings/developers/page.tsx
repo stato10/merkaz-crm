@@ -190,6 +190,17 @@ export default async function DevelopersPage() {
             מפרט OpenAPI מלא
           </a>
           <p className="mt-3 text-xs text-muted">{activeKeys.length} מפתחות פעילים · {endpoints.length} כתובות Webhook</p>
+
+          <h2 className="mt-6 border-t border-line pt-5 font-semibold">שרת MCP</h2>
+          <p className="mt-1 mb-3 text-muted">
+            חיבור Claude ועוזרי AI אחרים ישירות ל-CRM. הכלים הזמינים נקבעים לפי ההרשאה של המפתח.
+          </p>
+          <CopyField value={`${origin}/api/mcp`} label="כתובת שרת MCP" />
+          <pre dir="ltr" className="mt-3 overflow-x-auto rounded bg-surface-2 p-3 text-start font-mono text-xs leading-relaxed">
+{`claude mcp add --transport http merkaz \\
+  ${origin}/api/mcp \\
+  --header "Authorization: Bearer crm_live_…"`}
+          </pre>
         </Card>
       </div>
     </>
