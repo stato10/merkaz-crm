@@ -7,6 +7,9 @@ import {
   contactStatuses,
   contactStatusLabel,
   contactStatusTone,
+  dayKey,
+  formatMoney,
+  fromLocalInput,
   formatTime,
   fullName,
   startOfDay,
@@ -19,6 +22,9 @@ import {
   listActivities,
   listAppointments,
   listContacts,
+  listDeals,
+  listStages,
+  pipelineSummary,
   listTickets,
   ticketStatusCounts,
 } from "@/lib/queries";
@@ -57,6 +63,21 @@ export default async function Overview() {
   ]);
   const openCount = (tCounts as { open?: number }).open ?? 0;
 
+  const canDeals = ctx.can({ deal: ["read"] });
+  const monthStart = fromLocalInput(`${dayKey(new Date()).slice(0, 7)}-01T00:00`)!;
+  const [stages, openDeals, sum] = canDeals
+    ? await Promise.all([
+        listStages(ctx.orgId),
+        listDeals(ctx.orgId, { status: "open" }),
+        pipelineSummary(ctx.orgId, monthStart),
+      ])
+    : [[], [], null];
+  const byStage = stages.map((s) => {
+    const items = openDeals.filter((d) => d.stageId === s.id);
+    return { ...s, n: items.length, total: items.reduce((a, d) => a + d.amount, 0) };
+  });
+  const maxStage = Math.max(1, ...byStage.map((s) => s.total));
+
   return (
     <>
       <PageHeader
@@ -70,6 +91,50 @@ export default async function Overview() {
           )
         }
       />
+
+      {sum && (
+        <Card className="mb-6 p-5">
+          <div className="mb-5 flex flex-wrap items-baseline justify-between gap-4">
+            <h2 className="font-semibold">צנרת מכירות</h2>
+            <Link href="/deals" className="text-sm text-accent hover:underline">
+              ללוח העסקאות
+            </Link>
+          </div>
+          <div className="grid gap-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
+            <dl className="grid grid-cols-3 gap-4 lg:grid-cols-1">
+              <div>
+                <dt className="text-[13px] text-muted">פתוחות</dt>
+                <dd className="mt-0.5 text-xl font-medium tabular-nums">{formatMoney(sum.openSum)}</dd>
+              </div>
+              <div>
+                <dt className="text-[13px] text-muted">תחזית משוקללת</dt>
+                <dd className="mt-0.5 text-xl font-medium tabular-nums">{formatMoney(sum.weighted)}</dd>
+              </div>
+              <div>
+                <dt className="text-[13px] text-muted">נחתמו החודש</dt>
+                <dd className="mt-0.5 text-xl font-medium text-ok tabular-nums">{formatMoney(sum.wonSum)}</dd>
+              </div>
+            </dl>
+            <ul className="grid content-center gap-3" aria-label="שווי עסקאות פתוחות לפי שלב">
+              {byStage.map((s) => (
+                <li key={s.id} className="grid grid-cols-[7rem_minmax(0,1fr)_6.5rem] items-center gap-3 text-sm">
+                  <span className="truncate text-ink-2">{s.name}</span>
+                  <span className="h-2.5 overflow-hidden rounded-full bg-surface-2">
+                    <span
+                      className="block h-full rounded-full bg-brand"
+                      style={{ width: `${(s.total / maxStage) * 100}%` }}
+                    />
+                  </span>
+                  <span className="text-end tabular-nums">
+                    <span className="font-medium">{formatMoney(s.total, "ILS", true)}</span>
+                    <span className="text-xs text-muted"> · {s.n}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Card>
+      )}
 
       {(canTickets || canAppts) && (
         <div className="mb-6 grid gap-6 lg:grid-cols-2">

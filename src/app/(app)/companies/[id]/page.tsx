@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar, BackLink, Badge, Card } from "@/components/ui";
+import { DealList } from "@/components/deal-list";
 import { Timeline } from "@/components/timeline";
 import { contactStatusLabel, contactStatusTone, fullName } from "@/lib/labels";
-import { getCompany, listActivities, listContacts } from "@/lib/queries";
+import { getCompany, listActivities, listContacts, listDeals } from "@/lib/queries";
 import { requirePermission } from "@/lib/session";
 import { saveCompany } from "../actions";
 import { CompanyForm } from "../company-form";
@@ -16,9 +17,11 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
   const { id } = await params;
   const company = await getCompany(ctx.orgId, id);
   if (!company) notFound();
-  const [people, activities] = await Promise.all([
+  const canDeals = ctx.can({ deal: ["read"] });
+  const [people, activities, deals] = await Promise.all([
     listContacts(ctx.orgId, { companyId: id }),
     listActivities(ctx.orgId, { companyId: id }, 30),
+    canDeals ? listDeals(ctx.orgId, { companyId: id, limit: 8 }) : [],
   ]);
 
   return (
@@ -26,7 +29,15 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
       <BackLink href="/companies">חברות</BackLink>
       <h1 className="mt-3 mb-6 text-2xl font-semibold tracking-tight">{company.name}</h1>
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="grid gap-6">
+        <div className="grid content-start gap-6">
+          {canDeals && (
+            <Card className="p-5">
+              <DealList
+                items={deals}
+                newHref={ctx.can({ deal: ["create"] }) ? `/deals/new?company=${id}` : undefined}
+              />
+            </Card>
+          )}
           <Card className="p-5">
             <h2 className="mb-4 font-semibold">פרטים</h2>
             <CompanyForm

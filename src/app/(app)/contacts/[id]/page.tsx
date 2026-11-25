@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Mail, Phone, Plus } from "lucide-react";
 import { Avatar, BackLink, Badge, buttonClass, Card } from "@/components/ui";
+import { DealList } from "@/components/deal-list";
 import { Timeline } from "@/components/timeline";
 import {
   appointmentStatusLabel,
@@ -22,6 +23,7 @@ import {
   getContact,
   listActivities,
   listAppointments,
+  listDeals,
   listMembers,
   listTickets,
 } from "@/lib/queries";
@@ -40,12 +42,14 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
   const c = row.contact;
   const canTickets = ctx.can({ ticket: ["read"] });
   const canAppts = ctx.can({ appointment: ["read"] });
-  const [activities, companies, members, tickets, appts] = await Promise.all([
+  const canDeals = ctx.can({ deal: ["read"] });
+  const [activities, companies, members, tickets, appts, deals] = await Promise.all([
     listActivities(ctx.orgId, { contactId: id }),
     companyOptions(ctx.orgId),
     listMembers(ctx.orgId),
     canTickets ? listTickets(ctx.orgId, { contactId: id, limit: 5 }) : [],
     canAppts ? listAppointments(ctx.orgId, { contactId: id, from: startOfDay(new Date()), limit: 5 }) : [],
+    canDeals ? listDeals(ctx.orgId, { contactId: id, limit: 6 }) : [],
   ]);
   const canEdit = ctx.can({ contact: ["update"] });
 
@@ -76,6 +80,14 @@ export default async function ContactPage({ params }: PageProps<"/contacts/[id]"
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div className="grid content-start gap-6">
+        {canDeals && (
+          <Card className="p-5">
+            <DealList
+              items={deals}
+              newHref={ctx.can({ deal: ["create"] }) ? `/deals/new?contact=${id}` : undefined}
+            />
+          </Card>
+        )}
         {(canTickets || canAppts) && (
           <Card className="p-5">
             <h2 className="mb-3 font-semibold">שירות</h2>

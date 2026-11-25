@@ -24,6 +24,7 @@ export const activityLabel: Record<string, string> = {
   meeting: "פגישה",
   ticket: "פנייה",
   appointment: "תור",
+  deal: "עסקה",
 };
 
 const dateFmt = new Intl.DateTimeFormat("he-IL", { day: "numeric", month: "short", year: "numeric" });
@@ -178,3 +179,41 @@ export function formatDay(d: Date, now = new Date()) {
   if (k === dayKey(new Date(now.getTime() - 86400000))) return "אתמול";
   return dayFmt.format(d);
 }
+
+/* ---------------- Sales ---------------- */
+
+export const dealStatuses = ["open", "won", "lost"] as const;
+export type DealStatus = (typeof dealStatuses)[number];
+export const dealStatusLabel: Record<DealStatus, string> = {
+  open: "פתוחה",
+  won: "נחתמה",
+  lost: "לא נסגרה",
+};
+export const dealStatusTone = { open: "accent", won: "ok", lost: "neutral" } as const;
+
+/** Stages a new organization starts with; editable in settings. */
+export const defaultStages = [
+  { name: "ליד חדש", probability: 10 },
+  { name: "שיחת היכרות", probability: 25 },
+  { name: "הצעת מחיר", probability: 50 },
+  { name: "משא ומתן", probability: 75 },
+];
+
+const moneyFmt = new Map<string, Intl.NumberFormat>();
+export function formatMoney(amount: number, currency = "ILS", compact = false) {
+  const k = `${currency}|${compact}`;
+  let f = moneyFmt.get(k);
+  if (!f) {
+    f = new Intl.NumberFormat("he-IL", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: compact ? 1 : 0,
+      notation: compact ? "compact" : "standard",
+    });
+    moneyFmt.set(k, f);
+  }
+  return f.format(amount);
+}
+
+/** "YYYY-MM-DD" (a date column) → short Hebrew date. */
+export const formatDateOnly = (s: string) => formatDate(new Date(`${s}T12:00:00Z`));

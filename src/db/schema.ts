@@ -1,6 +1,8 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
+  date,
   index,
   integer,
   jsonb,
@@ -181,6 +183,7 @@ export const activities = pgTable(
     actorId: text("actor_id").references(() => user.id, { onDelete: "set null" }),
     contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "cascade" }),
     companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }),
+    dealId: uuid("deal_id").references((): AnyPgColumn => deals.id, { onDelete: "set null" }),
     type: text("type").notNull(), // note | created | updated | call | email | meeting
     body: text("body").notNull().default(""),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -188,6 +191,7 @@ export const activities = pgTable(
   (t) => [
     index("activities_contact_idx").on(t.contactId, t.createdAt),
     index("activities_company_idx").on(t.companyId, t.createdAt),
+    index("activities_deal_idx").on(t.dealId, t.createdAt),
   ],
 );
 
@@ -271,6 +275,54 @@ export const appointments = pgTable(
   ],
 );
 
+/* ------------------------------------------------------------------ */
+/* Sales: pipeline stages and deals                                    */
+/* ------------------------------------------------------------------ */
+
+export const dealStatus = pgEnum("deal_status", ["open", "won", "lost"]);
+
+/** Open stages of an organization's pipeline. Won and lost are deal outcomes, not stages. */
+export const pipelineStages = pgTable(
+  "pipeline_stages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: orgId(),
+    name: text("name").notNull(),
+    position: integer("position").notNull(),
+    probability: integer("probability").notNull().default(0), // 0–100, for the weighted forecast
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("pipeline_stages_org_idx").on(t.orgId, t.position)],
+);
+
+export const deals = pgTable(
+  "deals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: orgId(),
+    title: text("title").notNull(),
+    amount: integer("amount").notNull().default(0), // whole currency units
+    currency: text("currency").notNull().default("ILS"),
+    stageId: uuid("stage_id")
+      .notNull()
+      .references(() => pipelineStages.id, { onDelete: "restrict" }),
+    status: dealStatus("status").notNull().default("open"),
+    contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "set null" }),
+    companyId: uuid("company_id").references(() => companies.id, { onDelete: "set null" }),
+    ownerId: text("owner_id").references(() => user.id, { onDelete: "set null" }),
+    expectedClose: date("expected_close"),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    lostReason: text("lost_reason"),
+    stageChangedAt: timestamp("stage_changed_at", { withTimezone: true }).notNull().defaultNow(),
+    ...timestamps,
+  },
+  (t) => [
+    index("deals_board_idx").on(t.orgId, t.status, t.stageId),
+    index("deals_contact_idx").on(t.contactId),
+    index("deals_company_idx").on(t.companyId),
+  ],
+);
+
 /** Append-only security/audit log (who did what). */
 export const auditLog = pgTable(
   "audit_log",
@@ -305,3 +357,5 @@ export type Company = typeof companies.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
 export type Ticket = typeof tickets.$inferSelect;
 export type Appointment = typeof appointments.$inferSelect;
+export type Deal = typeof deals.$inferSelect;
+export type PipelineStage = typeof pipelineStages.$inferSelect;

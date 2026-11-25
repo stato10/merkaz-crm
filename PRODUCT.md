@@ -27,8 +27,8 @@ An AI agent answers customers by voice, WhatsApp and chat, and hands a conversat
 
 ## Capabilities and Constraints
 
-- Built: contacts, companies, activity timeline, team and roles, ticket inbox with conversation thread, appointments with clash check.
-- Planned: deals and pipeline, Claude-based AI agent, channels (WhatsApp, email, voice via LiveKit), dashboards and reports.
+- Built: contacts, companies, activity timeline, team and roles, ticket inbox with conversation thread, appointments with clash check, deals with a drag-and-drop pipeline board, weighted forecast and won/lost outcomes.
+- Planned: editable pipeline stages in settings, Claude-based AI agent, channels (WhatsApp, email, voice via LiveKit), dashboards and reports.
 - Per-customer customization is a goal; how far it goes (branding, fields, workflows) is undecided.
 - Stack: Next.js 16, React 19, Tailwind v4, Postgres with Drizzle, Better Auth.
 

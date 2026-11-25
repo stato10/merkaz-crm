@@ -1,7 +1,7 @@
 import "server-only";
 import { and, count, desc, eq, gte, ilike, lt, or, type SQL, sql } from "drizzle-orm";
 import { db, schema } from "@/db";
-import type { ContactStatus, TicketStatus } from "./labels";
+import { type ContactStatus, type DealStatus, defaultStages, type TicketStatus } from "./labels";
 
 const { contacts, companies, activities, member, user } = schema;
 
@@ -75,12 +75,13 @@ export async function getContact(orgId: string, id: string) {
 
 export async function listActivities(
   orgId: string,
-  filter: { contactId?: string; companyId?: string },
+  filter: { contactId?: string; companyId?: string; dealId?: string },
   limit = 50,
 ) {
   const where: SQL[] = [eq(activities.orgId, orgId)];
   if (filter.contactId) where.push(eq(activities.contactId, filter.contactId));
   if (filter.companyId) where.push(eq(activities.companyId, filter.companyId));
+  if (filter.dealId) where.push(eq(activities.dealId, filter.dealId));
   return db
     .select({
       id: activities.id,
@@ -319,4 +320,152 @@ export async function contactOptions(orgId: string) {
     .where(eq(contacts.orgId, orgId))
     .orderBy(contacts.firstName, contacts.lastName)
     .limit(2000);
+}
+
+/* ---------------- Sales ---------------- */
+
+const { deals, pipelineStages } = schema;
+
+/** The organization's open stages in order. Creates the default set on first use. */
+export async function listStages(orgId: string) {
+  const rows = await db
+    .select()
+    .from(pipelineStages)
+    .where(eq(pipelineStages.orgId, orgId))
+    .orderBy(pipelineStages.position);
+  if (rows.length) return rows;
+  return db.transaction(async (tx) => {
+    // Serialize first-use seeding so two parallel requests don't both insert.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"stages:" + orgId}))`);
+    const again = await tx
+      .select()
+      .from(pipelineStages)
+      .where(eq(pipelineStages.orgId, orgId))
+      .orderBy(pipelineStages.position);
+    if (again.length) return again;
+    return tx
+      .insert(pipelineStages)
+      .values(defaultStages.map((s, i) => ({ ...s, orgId, position: i + 1 })))
+      .returning();
+  });
+}
+
+export async function listDeals(
+  orgId: string,
+  opts: {
+    status?: DealStatus;
+    ownerId?: string;
+    contactId?: string;
+    companyId?: string;
+    q?: string;
+    limit?: number;
+  } = {},
+) {
+  const where: SQL[] = [eq(deals.orgId, orgId)];
+  if (opts.status) where.push(eq(deals.status, opts.status));
+  if (opts.ownerId) where.push(eq(deals.ownerId, opts.ownerId));
+  if (opts.contactId) where.push(eq(deals.contactId, opts.contactId));
+  if (opts.companyId) where.push(eq(deals.companyId, opts.companyId));
+  if (opts.q) {
+    const q = `%${opts.q.replace(/[%_\\]/g, "\\$&")}%`;
+    where.push(
+      or(
+        ilike(deals.title, q),
+        ilike(companies.name, q),
+        ilike(sql`${contacts.firstName} || ' ' || ${contacts.lastName}`, q),
+      )!,
+    );
+  }
+  return db
+    .select({
+      id: deals.id,
+      title: deals.title,
+      amount: deals.amount,
+      currency: deals.currency,
+      status: deals.status,
+      stageId: deals.stageId,
+      stageName: pipelineStages.name,
+      probability: pipelineStages.probability,
+      expectedClose: deals.expectedClose,
+      closedAt: deals.closedAt,
+      stageChangedAt: deals.stageChangedAt,
+      updatedAt: deals.updatedAt,
+      contactId: deals.contactId,
+      contactFirst: contacts.firstName,
+      contactLast: contacts.lastName,
+      companyId: deals.companyId,
+      companyName: companies.name,
+      ownerId: deals.ownerId,
+      ownerName: user.name,
+    })
+    .from(deals)
+    .innerJoin(pipelineStages, eq(pipelineStages.id, deals.stageId))
+    .leftJoin(contacts, eq(contacts.id, deals.contactId))
+    .leftJoin(companies, eq(companies.id, deals.companyId))
+    .leftJoin(user, eq(user.id, deals.ownerId))
+    .where(and(...where))
+    .orderBy(desc(sql`coalesce(${deals.closedAt}, ${deals.updatedAt})`))
+    .limit(opts.limit ?? 500);
+}
+
+export async function getDeal(orgId: string, id: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const [row] = await db
+    .select({
+      deal: deals,
+      stageName: pipelineStages.name,
+      contactFirst: contacts.firstName,
+      contactLast: contacts.lastName,
+      contactPhone: contacts.phone,
+      contactEmail: contacts.email,
+      contactStatus: contacts.status,
+      companyName: companies.name,
+    })
+    .from(deals)
+    .innerJoin(pipelineStages, eq(pipelineStages.id, deals.stageId))
+    .leftJoin(contacts, eq(contacts.id, deals.contactId))
+    .leftJoin(companies, eq(companies.id, deals.companyId))
+    .where(and(eq(deals.id, id), eq(deals.orgId, orgId)))
+    .limit(1);
+  return row ?? null;
+}
+
+/** Headline numbers: open pipeline, weighted forecast, and deals closed since `since`. */
+export async function pipelineSummary(orgId: string, since: Date, ownerId?: string) {
+  const where: SQL[] = [eq(deals.orgId, orgId)];
+  if (ownerId) where.push(eq(deals.ownerId, ownerId));
+  const from = since.toISOString();
+  const open = sql`${deals.status} = 'open'`;
+  const wonSince = sql`${deals.status} = 'won' and ${deals.closedAt} >= ${from}::timestamptz`;
+  const lostSince = sql`${deals.status} = 'lost' and ${deals.closedAt} >= ${from}::timestamptz`;
+  const [r] = await db
+    .select({
+      openCount: sql<number>`count(*) filter (where ${open})::int`,
+      openSum: sql<number>`coalesce(sum(${deals.amount}) filter (where ${open}), 0)::float8`,
+      weighted: sql<number>`coalesce(sum(${deals.amount} * ${pipelineStages.probability} / 100.0) filter (where ${open}), 0)::float8`,
+      wonCount: sql<number>`count(*) filter (where ${wonSince})::int`,
+      wonSum: sql<number>`coalesce(sum(${deals.amount}) filter (where ${wonSince}), 0)::float8`,
+      lostCount: sql<number>`count(*) filter (where ${lostSince})::int`,
+    })
+    .from(deals)
+    .innerJoin(pipelineStages, eq(pipelineStages.id, deals.stageId))
+    .where(and(...where));
+  return {
+    openCount: Number(r?.openCount ?? 0),
+    openSum: Number(r?.openSum ?? 0),
+    weighted: Math.round(Number(r?.weighted ?? 0)),
+    wonCount: Number(r?.wonCount ?? 0),
+    wonSum: Number(r?.wonSum ?? 0),
+    lostCount: Number(r?.lostCount ?? 0),
+  };
+}
+
+/** How many deals sit in each stage (any status), so a stage in use can't be deleted. */
+export async function stageUsage(orgId: string) {
+  const rows = await db
+    .select({ stageId: deals.stageId, n: count() })
+    .from(deals)
+    .where(eq(deals.orgId, orgId))
+    .groupBy(deals.stageId);
+  return Object.fromEntries(rows.map((r) => [r.stageId, r.n])) as Record<string, number>;
 }

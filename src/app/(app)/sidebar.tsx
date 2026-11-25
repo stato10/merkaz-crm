@@ -1,4 +1,4 @@
-import { Building2, CalendarClock, LayoutGrid, MessageSquareText, Settings, Users } from "lucide-react";
+import { Building2, CalendarClock, Handshake, LayoutGrid, MessageSquareText, Settings, Users } from "lucide-react";
 import { GlobalSearch } from "@/components/global-search";
 import { Logo } from "@/components/logo";
 import { Avatar } from "@/components/ui";
@@ -13,6 +13,7 @@ async function navItems() {
     { href: "/", label: "סקירה", icon: <LayoutGrid {...icon} />, show: true, group: "main" },
     { href: "/tickets", label: "פניות", icon: <MessageSquareText {...icon} />, show: ctx.can({ ticket: ["read"] }), group: "main" },
     { href: "/appointments", label: "תורים", icon: <CalendarClock {...icon} />, show: ctx.can({ appointment: ["read"] }), group: "main" },
+    { href: "/deals", label: "עסקאות", icon: <Handshake {...icon} />, show: ctx.can({ deal: ["read"] }), group: "main" },
     { href: "/contacts", label: "אנשי קשר", icon: <Users {...icon} />, show: ctx.can({ contact: ["read"] }), group: "main" },
     { href: "/companies", label: "חברות", icon: <Building2 {...icon} />, show: ctx.can({ company: ["read"] }), group: "main" },
     { href: "/settings/team", label: "צוות והרשאות", icon: <Settings {...icon} />, show: ctx.can({ member: ["create"] }), group: "settings" },
