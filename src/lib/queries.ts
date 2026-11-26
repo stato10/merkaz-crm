@@ -256,6 +256,9 @@ export async function listTicketMessages(orgId: string, ticketId: string) {
       id: ticketMessages.id,
       kind: ticketMessages.kind,
       body: ticketMessages.body,
+      channel: ticketMessages.channel,
+      delivery: ticketMessages.delivery,
+      deliveryError: ticketMessages.deliveryError,
       createdAt: ticketMessages.createdAt,
       authorName: user.name,
     })

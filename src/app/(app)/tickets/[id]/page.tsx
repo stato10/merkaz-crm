@@ -16,7 +16,9 @@ import {
 import { getTicket, listMembers, listTicketMessages } from "@/lib/queries";
 import { requirePermission } from "@/lib/session";
 import { aiConfigured } from "@/lib/ai/agent";
-import { addMessage, draftReply, updateTicket } from "../actions";
+import { kindLabel, replyRoute } from "@/lib/channels/service";
+import { ActionButton } from "../../deals/client";
+import { addMessage, draftReply, resendMessage, updateTicket } from "../actions";
 import { Composer, TicketProps } from "../client";
 
 export const metadata: Metadata = { title: "פנייה" };
@@ -27,16 +29,37 @@ const kindStyle = {
   note: "mx-auto w-full border border-dashed border-warn/50 bg-warn-soft/60",
 } as const;
 
+const deliveryText: Record<string, string> = {
+  queued: "בשליחה",
+  sent: "נשלח",
+  delivered: "נמסר",
+  read: "נקרא",
+  failed: "לא נשלח",
+};
+
 export default async function TicketPage({ params }: PageProps<"/tickets/[id]">) {
   const ctx = await requirePermission({ ticket: ["read"] });
   const { id } = await params;
   const row = await getTicket(ctx.orgId, id);
   if (!row) notFound();
   const t = row.ticket;
-  const [messages, members] = await Promise.all([
+  const [messages, members, route] = await Promise.all([
     listTicketMessages(ctx.orgId, id),
     listMembers(ctx.orgId),
+    replyRoute(ctx.orgId, t),
   ]);
+  // Isolate the address as LTR so "+972…" does not flip inside the Hebrew sentence.
+  const LRI = "⁦";
+  const PDI = "⁩";
+  const to = route ? `${LRI}${route.account.kind === "whatsapp" ? `+${route.to}` : route.to}${PDI}` : null;
+  const sendVia = route
+    ? {
+        text: `התגובה תישלח ב${kindLabel[route.account.kind]} אל ${to}`,
+        warn: route.windowClosed
+          ? "עברו יותר מ-24 שעות מההודעה האחרונה של הלקוח. WhatsApp ידחה הודעה חופשית, אז כדאי להתקשר או לשלוח אימייל."
+          : undefined,
+      }
+    : undefined;
   const canEdit = ctx.can({ ticket: ["update"] });
   const contactName = row.contactFirst
     ? fullName({ firstName: row.contactFirst, lastName: row.contactLast ?? "" })
@@ -75,15 +98,28 @@ export default async function TicketPage({ params }: PageProps<"/tickets/[id]">)
                         : (m.authorName ?? "הצוות")}
                   </span>
                   <time dateTime={m.createdAt.toISOString()}>{formatDateTime(m.createdAt)}</time>
+                  {m.channel && <span>· {channelLabel[m.channel] ?? m.channel}</span>}
+                  {m.kind === "outbound" && m.delivery && (
+                    <span className={cx(m.delivery === "failed" ? "font-medium text-danger" : m.delivery === "read" && "text-ok")}>
+                      · {deliveryText[m.delivery] ?? m.delivery}
+                    </span>
+                  )}
                 </div>
                 <p className={cx("rounded-md px-5 py-4 text-sm leading-relaxed whitespace-pre-wrap", kindStyle[m.kind])}>
                   {m.body}
                 </p>
+                {m.delivery === "failed" && (
+                  <div className="mt-2 flex flex-wrap items-center justify-end gap-2 text-xs">
+                    {m.deliveryError && <span className="text-danger">{m.deliveryError}</span>}
+                    {canEdit && <ActionButton action={resendMessage.bind(null, id, m.id)} label="שליחה חוזרת" variant="ghost" />}
+                  </div>
+                )}
               </li>
             ))}
           </ol>
           {canEdit && (
             <Composer
+              sendVia={sendVia}
               action={addMessage.bind(null, id)}
               draft={aiConfigured() ? draftReply.bind(null, id) : undefined}
             />

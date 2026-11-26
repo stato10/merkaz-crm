@@ -1,4 +1,4 @@
-import { Building2, CalendarClock, Handshake, LayoutGrid, MessageSquareText, Settings, Sparkles, Users, Webhook } from "lucide-react";
+import { Building2, CalendarClock, Handshake, LayoutGrid, MessageSquareText, Radio, Settings, Sparkles, Users, Webhook } from "lucide-react";
 import { GlobalSearch } from "@/components/global-search";
 import { Logo } from "@/components/logo";
 import { Avatar } from "@/components/ui";
@@ -18,6 +18,7 @@ async function navItems() {
     { href: "/companies", label: "חברות", icon: <Building2 {...icon} />, show: ctx.can({ company: ["read"] }), group: "main" },
     { href: "/assistant", label: "עוזר AI", icon: <Sparkles {...icon} />, show: true, group: "main" },
     { href: "/settings/team", label: "צוות והרשאות", icon: <Settings {...icon} />, show: ctx.can({ member: ["create"] }), group: "settings" },
+    { href: "/settings/channels", label: "ערוצי תקשורת", icon: <Radio {...icon} />, show: ctx.can({ settings: ["update"] }), group: "settings" },
     { href: "/settings/developers", label: "API ו-Webhooks", icon: <Webhook {...icon} />, show: ctx.can({ settings: ["update"] }), group: "settings" },
   ].filter((i) => i.show);
 }

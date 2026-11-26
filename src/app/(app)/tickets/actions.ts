@@ -7,6 +7,7 @@ import { z } from "zod";
 import { db, schema } from "@/db";
 import { runAgent } from "@/lib/ai/agent";
 import { aiGate } from "@/lib/ai/guard";
+import { deliverMessage, replyRoute } from "@/lib/channels/service";
 import { ticketPriorities, ticketStatuses } from "@/lib/labels";
 import { log } from "@/lib/log";
 import { audit, type Ctx, ForbiddenError, requirePermission } from "@/lib/session";
@@ -100,21 +101,32 @@ const messageInput = z.object({
 });
 
 export async function addMessage(ticketId: string, _: FormState, form: FormData): Promise<FormState> {
+  let delivery: Awaited<ReturnType<typeof deliverMessage>> = null;
   try {
     const ctx = await requirePermission({ ticket: ["update"] });
     const parsed = messageInput.safeParse(Object.fromEntries(form));
     if (!parsed.success) return { error: parsed.error.issues[0].message };
     const t = await db.query.tickets.findFirst({
       where: and(eq(tickets.id, ticketId), eq(tickets.orgId, ctx.orgId)),
-      columns: { id: true, status: true, assigneeId: true },
+      columns: { id: true, status: true, assigneeId: true, channelAccountId: true, replyTo: true },
     });
     if (!t) return { error: "הפנייה לא נמצאה" };
     const { kind, body } = parsed.data;
+    // Replies on a ticket that came in on a connected channel go out on that channel.
+    const route = kind === "outbound" ? await replyRoute(ctx.orgId, t) : null;
 
-    await db.transaction(async (tx) => {
-      await tx
+    const messageId = await db.transaction(async (tx) => {
+      const [m] = await tx
         .insert(ticketMessages)
-        .values({ orgId: ctx.orgId, ticketId, kind, authorId: ctx.userId, body });
+        .values({
+          orgId: ctx.orgId,
+          ticketId,
+          kind,
+          authorId: ctx.userId,
+          body,
+          ...(route ? { channel: route.account.kind, delivery: "queued" } : {}),
+        })
+        .returning({ id: ticketMessages.id });
       // A reply waits on the customer; a new customer message reopens the ticket.
       // Whoever answers an unassigned ticket takes it.
       const status = kind === "outbound" ? "pending" : kind === "inbound" ? "open" : t.status;
@@ -127,12 +139,37 @@ export async function addMessage(ticketId: string, _: FormState, form: FormData)
           assigneeId: t.assigneeId ?? (kind === "outbound" ? ctx.userId : null),
         })
         .where(eq(tickets.id, ticketId));
+      return m.id;
     });
+    if (route) {
+      delivery = await deliverMessage(ctx.orgId, messageId);
+      await audit(ctx, "ticket.reply", ticketId, { channel: route.account.kind, ok: delivery?.ok ?? false });
+    }
   } catch (e) {
     return fail(e);
   }
   revalidatePath(`/tickets/${ticketId}`);
   revalidatePath("/tickets");
+  // The reply is saved either way; a failed send shows on the message with a retry button.
+  if (delivery && !delivery.ok) return { ok: true, error: `התגובה נשמרה אבל לא נשלחה: ${delivery.error}` };
+  return { ok: true };
+}
+
+/** Retry sending a failed outbound message. */
+export async function resendMessage(ticketId: string, messageId: string): Promise<FormState> {
+  try {
+    const ctx = await requirePermission({ ticket: ["update"] });
+    const m = await db.query.ticketMessages.findFirst({
+      where: and(eq(ticketMessages.id, messageId), eq(ticketMessages.orgId, ctx.orgId), eq(ticketMessages.ticketId, ticketId)),
+      columns: { delivery: true },
+    });
+    if (m?.delivery !== "failed") return { error: "ההודעה לא ממתינה לשליחה חוזרת" };
+    const r = await deliverMessage(ctx.orgId, messageId);
+    revalidatePath(`/tickets/${ticketId}`);
+    if (r && !r.ok) return { error: r.error };
+  } catch (e) {
+    return fail(e);
+  }
   return { ok: true };
 }
 

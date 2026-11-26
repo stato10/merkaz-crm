@@ -222,6 +222,10 @@ export const tickets = pgTable(
     priority: ticketPriority("priority").notNull().default("normal"),
     channel: text("channel").notNull().default("manual"), // manual | phone | email | whatsapp | web | ai
     contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "set null" }),
+    /** Connected inbox the conversation runs through; replies go out on it. */
+    channelAccountId: uuid("channel_account_id").references((): AnyPgColumn => channelAccounts.id, { onDelete: "set null" }),
+    /** Customer address on that channel: an email address or a WhatsApp number (digits). */
+    replyTo: text("reply_to"),
     assigneeId: text("assignee_id").references(() => user.id, { onDelete: "set null" }),
     createdById: text("created_by_id").references(() => user.id, { onDelete: "set null" }),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
@@ -247,9 +251,43 @@ export const ticketMessages = pgTable(
     kind: messageKind("kind").notNull(),
     authorId: text("author_id").references(() => user.id, { onDelete: "set null" }),
     body: text("body").notNull(),
+    /** Set when the message came in or went out on a connected channel. */
+    channel: text("channel"), // email | whatsapp
+    externalId: text("external_id"), // provider message id, for threading, dedupe and status updates
+    delivery: text("delivery"), // queued | sent | delivered | read | failed (outbound only)
+    deliveryError: text("delivery_error"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("ticket_messages_ticket_idx").on(t.ticketId, t.createdAt)],
+  (t) => [
+    index("ticket_messages_ticket_idx").on(t.ticketId, t.createdAt),
+    uniqueIndex("ticket_messages_external_idx").on(t.orgId, t.externalId),
+  ],
+);
+
+export const channelKind = pgEnum("channel_kind", ["email", "whatsapp"]);
+
+/**
+ * A connected inbox: an email address or a WhatsApp Business number.
+ * `provider` is sandbox (demo, nothing leaves the app), postmark or meta.
+ * `secrets` holds provider credentials encrypted with AES-256-GCM; it is never sent to the browser.
+ * `inboundToken` is the unguessable part of the inbound webhook URL.
+ */
+export const channelAccounts = pgTable(
+  "channel_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orgId: orgId(),
+    kind: channelKind("kind").notNull(),
+    provider: text("provider").notNull(),
+    name: text("name").notNull(),
+    address: text("address").notNull(), // sender email, or the business phone number for display
+    config: jsonb("config").$type<Record<string, string>>().notNull().default({}),
+    secrets: text("secrets"),
+    inboundToken: text("inbound_token").notNull(),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("channel_accounts_token_idx").on(t.inboundToken), index("channel_accounts_org_idx").on(t.orgId)],
 );
 
 export const appointments = pgTable(
@@ -433,6 +471,7 @@ export type Contact = typeof contacts.$inferSelect;
 export type Company = typeof companies.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
 export type Ticket = typeof tickets.$inferSelect;
+export type ChannelAccount = typeof channelAccounts.$inferSelect;
 export type Appointment = typeof appointments.$inferSelect;
 export type Deal = typeof deals.$inferSelect;
 export type PipelineStage = typeof pipelineStages.$inferSelect;

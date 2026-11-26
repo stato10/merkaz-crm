@@ -23,6 +23,7 @@ const tenantTables = [
   "audit_log",
   "webhook_endpoints",
   "webhook_deliveries",
+  "channel_accounts",
 ];
 
 async function main() {

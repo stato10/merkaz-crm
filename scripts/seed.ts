@@ -9,6 +9,7 @@
  *   email:    demo@merkaz.dev
  *   password: DEMO_PASSWORD env var, or "merkaz-demo-2026"
  */
+import { randomBytes } from "node:crypto";
 import { config } from "dotenv";
 
 config({ path: ".env.local", quiet: true });
@@ -31,6 +32,7 @@ async function main() {
   const { hashPassword } = await import("better-auth/crypto");
   const { eq } = await import("drizzle-orm");
   const { db, schema } = await import("../src/db");
+  const { phoneDigits } = await import("../src/lib/channels/parse");
   const s = schema;
 
   const existing = await db.query.organization.findFirst({ where: eq(s.organization.slug, ORG_SLUG) });
@@ -90,7 +92,7 @@ async function main() {
   const contacts = await db
     .insert(s.contacts)
     .values(contactRows.map((c, i) => ({ ...c, orgId, ownerId: i % 3 === 2 ? owner : sales, createdAt: ago(40 - i * 2) })))
-    .returning({ id: s.contacts.id, companyId: s.contacts.companyId, firstName: s.contacts.firstName, lastName: s.contacts.lastName });
+    .returning({ id: s.contacts.id, companyId: s.contacts.companyId, firstName: s.contacts.firstName, lastName: s.contacts.lastName, email: s.contacts.email, phone: s.contacts.phone });
   const ct = (i: number) => contacts[i];
 
   await db.insert(s.activities).values(
@@ -159,6 +161,15 @@ async function main() {
     ]),
   );
 
+  // Sandbox inboxes: the demo runs the real inbound/outbound pipeline without sending anything.
+  const [waInbox, mailInbox] = await db
+    .insert(s.channelAccounts)
+    .values([
+      { orgId, kind: "whatsapp", provider: "sandbox", name: "WhatsApp שירות", address: "972535550100", inboundToken: randomBytes(24).toString("base64url") },
+      { orgId, kind: "email", provider: "sandbox", name: "תיבת התמיכה", address: "support@merkaz-demo.co.il", inboundToken: randomBytes(24).toString("base64url") },
+    ])
+    .returning();
+
   const ticketRows = [
     { subject: "לא מצליחים להתחבר מהנייד", priority: "high", status: "open", channel: "email", c: 1, body: "מאז העדכון אתמול שלושה עובדים לא מצליחים להתחבר מהטלפון. מקבלים הודעת שגיאה.", h: 3 },
     { subject: "בקשה להוספת שדה מספר עוסק", priority: "normal", status: "pending", channel: "web", c: 5, body: "אפשר להוסיף שדה של מספר עוסק בכרטיס חברה?", h: 26 },
@@ -179,6 +190,11 @@ async function main() {
         status: t.status,
         channel: t.channel,
         contactId: ct(t.c).id,
+        ...(t.channel === "whatsapp" && ct(t.c).phone
+          ? { channelAccountId: waInbox.id, replyTo: phoneDigits(ct(t.c).phone!) }
+          : t.channel === "email" && ct(t.c).email
+            ? { channelAccountId: mailInbox.id, replyTo: ct(t.c).email!.toLowerCase() }
+            : {}),
         assigneeId: i % 2 ? agent : owner,
         createdById: agent,
         createdAt: created,
@@ -186,7 +202,8 @@ async function main() {
         resolvedAt: t.status === "resolved" ? new Date(created.getTime() + 3_600_000) : null,
       })
       .returning({ id: s.tickets.id });
-    await db.insert(s.ticketMessages).values({ orgId, ticketId: row.id, kind: "inbound", body: t.body, createdAt: created });
+    const viaChannel = t.channel === "email" || t.channel === "whatsapp" ? t.channel : null;
+    await db.insert(s.ticketMessages).values({ orgId, ticketId: row.id, kind: "inbound", body: t.body, channel: viaChannel, createdAt: created });
     if (t.status !== "open") {
       await db.insert(s.ticketMessages).values({
         orgId,

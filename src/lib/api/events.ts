@@ -14,6 +14,7 @@ export const eventFor: Record<string, string> = {
   "deal.delete": "deal.deleted",
   "ticket.create": "ticket.created",
   "ticket.update": "ticket.updated",
+  "ticket.message": "ticket.message_received",
   "appointment.create": "appointment.created",
   "appointment.update": "appointment.updated",
   "appointment.status": "appointment.updated",

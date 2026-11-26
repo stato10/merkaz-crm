@@ -93,7 +93,15 @@ const kinds = [
 
 type DraftFn = () => Promise<{ draft?: string; handedOff?: string; error?: string }>;
 
-export function Composer({ action, draft }: { action: Action; draft?: DraftFn }) {
+export function Composer({
+  action,
+  draft,
+  sendVia,
+}: {
+  action: Action;
+  draft?: DraftFn;
+  sendVia?: { text: string; warn?: string };
+}) {
   const [ai, setAi] = useState<{ tone: "ok" | "warn" | "error"; text: string } | null>(null);
   const [state, formAction, pending] = useActionState<FormState, FormData>(async (s, f) => {
     const r = await action(s, f);
@@ -175,7 +183,9 @@ export function Composer({ action, draft }: { action: Action; draft?: DraftFn })
         }
       />
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        <Button disabled={pending || drafting}>{pending ? "שומר…" : kind === "outbound" ? "שמירת תגובה" : "הוספה"}</Button>
+        <Button disabled={pending || drafting}>
+          {pending ? (kind === "outbound" && sendVia ? "שולח…" : "שומר…") : kind === "outbound" ? (sendVia ? "שליחה ללקוח" : "שמירת תגובה") : "הוספה"}
+        </Button>
         {draft && kind === "outbound" && (
           <Button type="button" variant="secondary" onClick={suggest} disabled={drafting || pending} aria-busy={drafting}>
             <Sparkles size={16} strokeWidth={1.8} aria-hidden className={cx(drafting && "animate-pulse")} />
@@ -191,8 +201,10 @@ export function Composer({ action, draft }: { action: Action; draft?: DraftFn })
           </p>
         )}
         {kind === "outbound" && !state?.error && !ai && (
-          <p className="text-xs text-muted">
-            ערוץ שליחה עדיין לא מחובר. התגובה נשמרת בפנייה, ושולחים אותה ללקוח בנפרד.
+          <p className={cx("text-xs", sendVia?.warn ? "text-warn" : "text-muted")}>
+            {sendVia
+              ? (sendVia.warn ?? sendVia.text)
+              : "הפנייה לא הגיעה מערוץ מחובר. התגובה נשמרת בפנייה, ושולחים אותה ללקוח בנפרד."}
           </p>
         )}
         {state?.error && <p className="text-sm text-danger" role="alert">{state.error}</p>}
